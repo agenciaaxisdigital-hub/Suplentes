@@ -25,6 +25,8 @@ export default function Dashboard() {
   const totalFiscais = list.reduce((a: number, s: any) => a + (s.fiscais_qtd || 0), 0);
   const totalPessoas = totalLiderancas + totalFiscais;
   const totalCampanha = list.reduce((a: number, s: any) => a + (Number(s.total_campanha) || 0), 0);
+  const totalPlotagem = list.reduce((a: number, s: any) => a + (s.plotagem_qtd || 0), 0);
+  const totalRetirada = list.reduce((a: number, s: any) => a + ((s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0)), 0);
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const fmtN = (v: number) => v.toLocaleString("pt-BR");
