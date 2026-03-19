@@ -112,7 +112,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
         <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Dados do Candidato</h2>
 
         <Field label="Nome" required>
-          <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Nome completo" className="bg-muted" />
+          <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Nome completo" className="bg-card shadow-sm border-border" />
         </Field>
 
         <Field label="Região de Atuação">
