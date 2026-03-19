@@ -18,7 +18,16 @@ export default function Dashboard() {
     },
   });
 
-  const list = suplentes ?? [];
+  const list = useMemo(() => {
+    const all = suplentes ?? [];
+    if (!search.trim()) return all;
+    const q = search.toLowerCase();
+    return all.filter((s: any) =>
+      s.nome?.toLowerCase().includes(q) ||
+      s.regiao_atuacao?.toLowerCase().includes(q)
+    );
+  }, [suplentes, search]);
+
   const totalCadastros = list.length;
   const totalVotos = list.reduce((a: number, s: any) => a + (s.total_votos || 0), 0);
   const totalExpectativa = list.reduce((a: number, s: any) => a + (s.expectativa_votos || 0), 0);
