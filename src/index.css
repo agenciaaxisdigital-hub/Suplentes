@@ -103,9 +103,21 @@
     padding-top: env(safe-area-inset-top);
   }
 
-  /* Prevent pull-to-refresh on mobile */
+  /* Smooth native scroll on mobile */
   html {
     overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Prevent tap highlight flash */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Faster touch response */
+  button, a, input, select, textarea, [role="button"] {
+    touch-action: manipulation;
   }
 
   /* Selection color */
