@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, LogIn, Lock, User } from "lucide-react";
+import NetworkBackground from "@/components/NetworkBackground";
 import { toast } from "@/hooks/use-toast";
 
 const EMAIL_DOMAIN = "@painel.sarelli.com";
@@ -51,9 +52,9 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-b from-[hsl(340,60%,15%)] via-[hsl(340,50%,12%)] to-[hsl(240,10%,6%)] flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Ambient glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[radial-gradient(ellipse,hsl(340_82%_55%/0.15),transparent_70%)] pointer-events-none" />
+    <div className="min-h-[100dvh] bg-[hsl(240,10%,6%)] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated network background */}
+      <NetworkBackground />
 
       <div className="w-full max-w-sm space-y-6 relative z-10">
         {/* Photo + Identity */}
