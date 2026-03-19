@@ -96,7 +96,7 @@ export default function SignaturePad({ open, onClose, onSave, initial }: Props) 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[80] bg-background/95 backdrop-blur-sm">
       <div className="mx-auto flex h-full w-full max-w-3xl flex-col bg-background">
         <div className="flex items-center justify-between border-b border-border bg-card px-4 py-3 shrink-0">
           <Button variant="ghost" size="icon" onClick={onClose}>
@@ -108,7 +108,7 @@ export default function SignaturePad({ open, onClose, onSave, initial }: Props) 
           </Button>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="relative min-h-0 flex-1 bg-card">
             <canvas
               ref={canvasRef}
@@ -123,7 +123,7 @@ export default function SignaturePad({ open, onClose, onSave, initial }: Props) 
             />
           </div>
 
-          <div className="shrink-0 border-t border-border bg-background px-4 py-3 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-3">
+          <div className="shrink-0 border-t border-border bg-background px-4 py-3 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-3 shadow-[0_-8px_24px_hsl(var(--foreground)/0.08)]">
             <p className="text-xs text-muted-foreground">Assine acima desta linha</p>
             <div className="border-b border-dashed border-border" />
             <Button
