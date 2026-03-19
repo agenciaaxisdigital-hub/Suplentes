@@ -114,35 +114,56 @@ export default function Dashboard() {
         <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Resumo por Candidato</h2>
 
         {visibleList.map((s: any) => {
-          const pessoas = (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0);
+          const liderancas = s.liderancas_qtd || 0;
+          const fiscais = s.fiscais_qtd || 0;
+          const pessoas = liderancas + fiscais;
+          const plotagem = s.plotagem_qtd || 0;
+          const retirada = (s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0);
           return (
-            <div key={s.id} className="bg-card rounded-2xl border border-border p-4 shadow-sm space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="font-semibold text-foreground text-sm truncate">{s.nome}</p>
-                  {s.regiao_atuacao && (
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <MapPin size={10} /> {s.regiao_atuacao}
-                    </p>
-                  )}
+            <div key={s.id} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+              <div className="p-4 pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-foreground text-sm truncate">{s.nome}</p>
+                    {s.regiao_atuacao && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <MapPin size={10} className="text-primary" /> {s.regiao_atuacao}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-x-2 mt-0.5">
+                      {s.partido && <span className="text-[10px] text-muted-foreground">{s.partido}</span>}
+                      {s.situacao && <span className="text-[10px] font-medium text-primary uppercase">{s.situacao}</span>}
+                    </div>
+                  </div>
+                  <span className="text-sm font-bold text-primary whitespace-nowrap">
+                    {fmt(Number(s.total_campanha) || 0)}
+                  </span>
                 </div>
-                <span className="text-sm font-bold text-primary whitespace-nowrap">
-                  {fmt(Number(s.total_campanha) || 0)}
-                </span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-muted rounded-lg p-2 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase">Votos</p>
+
+              <div className="grid grid-cols-4 border-t border-border divide-x divide-border bg-muted/40">
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Votos</p>
                   <p className="text-sm font-bold text-foreground">{fmtN(s.total_votos || 0)}</p>
                 </div>
-                <div className="bg-muted rounded-lg p-2 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase">Expect.</p>
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Expect.</p>
                   <p className="text-sm font-bold text-foreground">{fmtN(s.expectativa_votos || 0)}</p>
                 </div>
-                <div className="bg-muted rounded-lg p-2 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase">Pessoas</p>
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Pessoas</p>
                   <p className="text-sm font-bold text-foreground">{fmtN(pessoas)}</p>
                 </div>
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Plotag.</p>
+                  <p className="text-sm font-bold text-foreground">{fmtN(plotagem)}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between px-4 py-2 border-t border-border text-[10px] text-muted-foreground">
+                <span className="flex items-center gap-1"><UserCheck size={10} /> {liderancas} líd.</span>
+                <span className="flex items-center gap-1"><Eye size={10} /> {fiscais} fisc.</span>
+                <span className="flex items-center gap-1"><Banknote size={10} /> {fmt(retirada)} ret.</span>
               </div>
             </div>
           );
