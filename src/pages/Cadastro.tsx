@@ -161,10 +161,10 @@ export default function Cadastro({ initial, onSaved }: Props) {
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Votos Eleição Passada">
-            <Input type="number" inputMode="numeric" value={form.total_votos} onChange={(e) => setNum("total_votos", e.target.value)} className="bg-card shadow-sm border-border" />
+            <Input type="number" inputMode="numeric" value={form.total_votos || ""} onChange={(e) => setNum("total_votos", e.target.value)} placeholder="0" className="bg-card shadow-sm border-border" />
           </Field>
           <Field label="Expectativa de Votos">
-            <Input type="number" inputMode="numeric" value={form.expectativa_votos} onChange={(e) => setNum("expectativa_votos", e.target.value)} className="bg-card shadow-sm border-border" />
+            <Input type="number" inputMode="numeric" value={form.expectativa_votos || ""} onChange={(e) => setNum("expectativa_votos", e.target.value)} placeholder="0" className="bg-card shadow-sm border-border" />
           </Field>
         </div>
 
@@ -272,11 +272,11 @@ function CalcRow({ label, val1, label1, val2, label2, onChange1, onChange2, tota
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label className="text-[10px] text-muted-foreground">{label1}</Label>
-          <Input type="number" inputMode="numeric" value={displayVal1} onChange={(e) => onChange1(e.target.value)} className="bg-card shadow-sm border-border h-8 text-sm" />
+          <Input type="number" inputMode="numeric" value={displayVal1} placeholder="0" onChange={(e) => onChange1(e.target.value)} className="bg-card shadow-sm border-border h-8 text-sm" />
         </div>
         <div>
           <Label className="text-[10px] text-muted-foreground">{label2}</Label>
-          <Input type="number" inputMode="numeric" value={displayVal2} onChange={(e) => onChange2(e.target.value)} className="bg-card shadow-sm border-border h-8 text-sm" />
+          <Input type="number" inputMode="numeric" value={displayVal2} placeholder="0" onChange={(e) => onChange2(e.target.value)} className="bg-card shadow-sm border-border h-8 text-sm" />
         </div>
       </div>
     </div>
