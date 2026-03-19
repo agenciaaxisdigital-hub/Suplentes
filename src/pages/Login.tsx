@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, LogIn, Lock, User } from "lucide-react";
@@ -13,10 +14,11 @@ const DOCTOR_PHOTO =
   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
 
 export default function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState(() => localStorage.getItem("saved_user") || "");
+  const [password, setPassword] = useState(() => localStorage.getItem("saved_pass") || "");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [remember, setRemember] = useState(() => !!localStorage.getItem("saved_user"));
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -37,6 +39,13 @@ export default function Login() {
         variant: "destructive",
       });
     } else {
+      if (remember) {
+        localStorage.setItem("saved_user", username);
+        localStorage.setItem("saved_pass", password);
+      } else {
+        localStorage.removeItem("saved_user");
+        localStorage.removeItem("saved_pass");
+      }
       navigate("/");
     }
   };
@@ -131,6 +140,19 @@ export default function Login() {
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+          </div>
+
+          {/* Lembrar credenciais */}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="remember"
+              checked={remember}
+              onCheckedChange={(v) => setRemember(!!v)}
+              className="border-white/20 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
+            />
+            <label htmlFor="remember" className="text-xs text-white/50 cursor-pointer select-none">
+              Lembrar meus dados
+            </label>
           </div>
 
           <Button
