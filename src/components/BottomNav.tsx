@@ -5,26 +5,39 @@ import { useAuth } from "@/hooks/useAuth";
 export function BottomNav() {
   const { signOut } = useAuth();
 
-  const linkClass = "flex flex-col items-center gap-1 text-[10px] py-2 px-3 rounded-lg transition-colors text-muted-foreground";
-  const activeClass = "text-primary bg-primary/10 font-semibold";
-
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur border-t border-border">
-      <div className="flex justify-around items-center max-w-lg mx-auto px-2 pb-[env(safe-area-inset-bottom)]">
-        <NavLink to="/" end className={linkClass} activeClassName={activeClass}>
-          <PlusCircle size={22} />
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border safe-area-bottom">
+      <div className="flex justify-around items-center max-w-lg mx-auto h-16" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <NavLink
+          to="/"
+          end
+          className="flex flex-col items-center gap-0.5 text-[10px] py-2 px-4 rounded-xl transition-all text-muted-foreground"
+          activeClassName="text-primary bg-primary/10 font-semibold scale-105"
+        >
+          <PlusCircle size={22} strokeWidth={1.8} />
           <span>Cadastrar</span>
         </NavLink>
-        <NavLink to="/cadastros" className={linkClass} activeClassName={activeClass}>
-          <List size={22} />
-          <span>Cadastros</span>
+        <NavLink
+          to="/cadastros"
+          className="flex flex-col items-center gap-0.5 text-[10px] py-2 px-4 rounded-xl transition-all text-muted-foreground"
+          activeClassName="text-primary bg-primary/10 font-semibold scale-105"
+        >
+          <List size={22} strokeWidth={1.8} />
+          <span>Fichas</span>
         </NavLink>
-        <NavLink to="/dashboard" className={linkClass} activeClassName={activeClass}>
-          <BarChart3 size={22} />
+        <NavLink
+          to="/dashboard"
+          className="flex flex-col items-center gap-0.5 text-[10px] py-2 px-4 rounded-xl transition-all text-muted-foreground"
+          activeClassName="text-primary bg-primary/10 font-semibold scale-105"
+        >
+          <BarChart3 size={22} strokeWidth={1.8} />
           <span>Dashboard</span>
         </NavLink>
-        <button onClick={signOut} className={`${linkClass} border-0 bg-transparent cursor-pointer`}>
-          <LogOut size={22} />
+        <button
+          onClick={signOut}
+          className="flex flex-col items-center gap-0.5 text-[10px] py-2 px-4 rounded-xl transition-all text-muted-foreground border-0 bg-transparent cursor-pointer active:scale-95"
+        >
+          <LogOut size={22} strokeWidth={1.8} />
           <span>Sair</span>
         </button>
       </div>
