@@ -74,36 +74,92 @@ export default function Cadastros() {
 
       <p className="text-xs text-muted-foreground">{filtered.length} registro(s)</p>
 
-      <div className="space-y-2">
-        {filtered.map((s: any) => (
-          <div
-            key={s.id}
-            className="bg-card rounded-2xl border border-border p-4 flex items-center gap-3 shadow-sm"
-          >
-            <button
-              onClick={() => setEditingId(s.id)}
-              className="flex-1 min-w-0 text-left space-y-1"
-            >
-              <p className="font-semibold text-foreground truncate">{s.nome}</p>
-              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                {s.regiao_atuacao && (
-                  <span className="flex items-center gap-1"><MapPin size={12} /> {s.regiao_atuacao}</span>
-                )}
-                <span className="flex items-center gap-1"><Vote size={12} /> {s.total_votos} votos</span>
-                <span className="flex items-center gap-1 text-primary font-medium"><DollarSign size={12} /> {fmt(s.total_campanha)}</span>
+      <div className="space-y-3">
+        {filtered.map((s: any) => {
+          const liderancas = (s.liderancas_qtd || 0);
+          const fiscais = (s.fiscais_qtd || 0);
+          const plotagem = (s.plotagem_qtd || 0);
+          const pessoas = liderancas + fiscais;
+          const retirada = (s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0);
+
+          return (
+            <div key={s.id} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+              {/* Header */}
+              <button
+                onClick={() => setEditingId(s.id)}
+                className="w-full text-left p-4 pb-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-foreground text-sm truncate">{s.nome}</p>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
+                      {s.regiao_atuacao && (
+                        <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <MapPin size={11} className="text-primary shrink-0" /> {s.regiao_atuacao}
+                        </span>
+                      )}
+                      {s.telefone && (
+                        <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <Phone size={11} className="shrink-0" /> {s.telefone}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
+                      {s.partido && (
+                        <span className="text-[11px] text-muted-foreground">{s.partido}</span>
+                      )}
+                      {s.cargo_disputado && (
+                        <span className="text-[11px] text-muted-foreground">{s.cargo_disputado} {s.ano_eleicao}</span>
+                      )}
+                      {s.situacao && (
+                        <span className="text-[10px] font-medium uppercase tracking-wider text-primary">{s.situacao}</span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm font-bold text-primary whitespace-nowrap">{fmt(s.total_campanha)}</p>
+                </div>
+              </button>
+
+              {/* Stats row */}
+              <div className="grid grid-cols-4 border-t border-border divide-x divide-border bg-muted/40">
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Votos</p>
+                  <p className="text-sm font-bold text-foreground">{(s.total_votos || 0).toLocaleString("pt-BR")}</p>
+                </div>
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Expect.</p>
+                  <p className="text-sm font-bold text-foreground">{(s.expectativa_votos || 0).toLocaleString("pt-BR")}</p>
+                </div>
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Pessoas</p>
+                  <p className="text-sm font-bold text-foreground">{pessoas.toLocaleString("pt-BR")}</p>
+                </div>
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Plotag.</p>
+                  <p className="text-sm font-bold text-foreground">{plotagem.toLocaleString("pt-BR")}</p>
+                </div>
               </div>
-            </button>
-            <div className="flex items-center gap-1 shrink-0">
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:text-primary" onClick={(e) => { e.stopPropagation(); exportSuplentePDF(s); }}>
-                <FileDown size={16} />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(s.id, s.nome)}>
-                <Trash2 size={16} />
-              </Button>
-              <ChevronRight size={20} className="text-muted-foreground" />
+
+              {/* Detail row */}
+              <div className="flex items-center justify-between px-4 py-2 border-t border-border text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1"><UserCheck size={10} /> {liderancas} líd.</span>
+                  <span className="flex items-center gap-1"><Eye size={10} /> {fiscais} fisc.</span>
+                  <span className="flex items-center gap-1"><Banknote size={10} /> {fmt(retirada)} ret.</span>
+                </div>
+                <div className="flex items-center gap-0.5">
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:text-primary" onClick={() => exportSuplentePDF(s)}>
+                    <FileDown size={14} />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(s.id, s.nome)}>
+                    <Trash2 size={14} />
+                  </Button>
+                  <ChevronRight size={16} className="text-muted-foreground" onClick={() => setEditingId(s.id)} />
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
