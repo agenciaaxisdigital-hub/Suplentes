@@ -1,7 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Users, DollarSign, Vote, TrendingUp, MapPin, ChevronDown, ChevronUp } from "lucide-react";
+import { Users, DollarSign, Vote, TrendingUp, MapPin, ChevronDown, ChevronUp, FileDown, FileSpreadsheet } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { exportAllPDF, exportExcel } from "@/lib/exports";
 
 export default function Dashboard() {
   const [expanded, setExpanded] = useState(false);
