@@ -59,8 +59,9 @@ interface Props {
 }
 
 export default function Cadastro({ initial, onSaved }: Props) {
-  const [form, setForm] = useState<FormData>(initial || defaultForm);
+  const [form, setForm] = useState<FormData>(initial ? { ...defaultForm, ...initial } : defaultForm);
   const [saving, setSaving] = useState(false);
+  const [showSignature, setShowSignature] = useState(false);
 
   const set = (key: keyof FormData, value: string | number) =>
     setForm((prev) => ({ ...prev, [key]: value }));
