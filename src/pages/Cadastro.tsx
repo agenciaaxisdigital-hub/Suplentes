@@ -229,11 +229,11 @@ function CalcRow({ label, val1, label1, val2, label2, onChange1, onChange2, tota
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label className="text-[10px] text-muted-foreground">{label1}</Label>
-          <Input type="number" value={val1} onChange={(e) => onChange1(e.target.value)} className="bg-card shadow-sm border-border h-8 text-sm" />
+          <Input type="number" inputMode="numeric" value={val1 || ""} onChange={(e) => onChange1(e.target.value)} className="bg-card shadow-sm border-border h-8 text-sm" />
         </div>
         <div>
           <Label className="text-[10px] text-muted-foreground">{label2}</Label>
-          <Input type="number" value={val2} onChange={(e) => onChange2(e.target.value)} className="bg-card shadow-sm border-border h-8 text-sm" />
+          <Input type="number" inputMode="numeric" value={val2 || ""} onChange={(e) => onChange2(e.target.value)} className="bg-card shadow-sm border-border h-8 text-sm" />
         </div>
       </div>
     </div>
