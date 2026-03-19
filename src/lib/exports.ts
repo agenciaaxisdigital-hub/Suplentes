@@ -259,6 +259,29 @@ export function exportExcel(list: any[]) {
     "Total Campanha (R$)": Number(s.total_campanha) || 0,
   }));
 
+  // Add TOTAL row
+  data.push({
+    "#": "",
+    "Nome": "TOTAL",
+    "Região": "",
+    "Telefone": "",
+    "Cargo": "",
+    "Partido": "",
+    "Situação": "",
+    "Votos Eleição Passada": list.reduce((a, s) => a + (s.total_votos || 0), 0),
+    "Expectativa Votos": list.reduce((a, s) => a + (s.expectativa_votos || 0), 0),
+    "Retirada Mensal (R$)": "",
+    "Meses": "",
+    "Plotagem Qtd": list.reduce((a, s) => a + (s.plotagem_qtd || 0), 0),
+    "Plotagem Unit. (R$)": "",
+    "Lideranças Qtd": list.reduce((a, s) => a + (s.liderancas_qtd || 0), 0),
+    "Lideranças Unit. (R$)": "",
+    "Fiscais Qtd": list.reduce((a, s) => a + (s.fiscais_qtd || 0), 0),
+    "Fiscais Unit. (R$)": "",
+    "Total Pessoas": list.reduce((a, s) => a + (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0), 0),
+    "Total Campanha (R$)": list.reduce((a, s) => a + (Number(s.total_campanha) || 0), 0),
+  } as any);
+
   const ws = XLSX.utils.json_to_sheet(data);
 
   // Column widths
