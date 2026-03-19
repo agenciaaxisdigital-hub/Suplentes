@@ -94,6 +94,9 @@ export default function Cadastros() {
               </div>
             </button>
             <div className="flex items-center gap-1 shrink-0">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:text-primary" onClick={(e) => { e.stopPropagation(); exportSuplentePDF(s); }}>
+                <FileDown size={16} />
+              </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(s.id, s.nome)}>
                 <Trash2 size={16} />
               </Button>
