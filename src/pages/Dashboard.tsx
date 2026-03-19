@@ -8,7 +8,7 @@ import { exportAllPDF, exportExcel } from "@/lib/exports";
 
 export default function Dashboard() {
   const [expanded, setExpanded] = useState(false);
-
+  const [search, setSearch] = useState("");
   const { data: suplentes } = useQuery({
     queryKey: ["suplentes"],
     queryFn: async () => {
