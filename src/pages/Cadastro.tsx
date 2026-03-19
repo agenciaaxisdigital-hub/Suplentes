@@ -47,7 +47,7 @@ const defaultForm: FormData = {
   plotagem_qtd: 0,
   plotagem_valor_unit: 250,
   liderancas_qtd: 0,
-  liderancas_valor_unit: 1622,
+  liderancas_valor_unit: 1662,
   fiscais_qtd: 0,
   fiscais_valor_unit: 110,
   assinatura: "",
