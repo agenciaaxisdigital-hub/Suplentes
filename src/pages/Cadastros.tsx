@@ -2,7 +2,9 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronRight, MapPin, Vote, DollarSign, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, ChevronRight, MapPin, Vote, DollarSign, ArrowLeft, Trash2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import Cadastro from "./Cadastro";
 
 export default function Cadastros() {
@@ -30,11 +32,22 @@ export default function Cadastros() {
 
   const editing = editingId ? suplentes?.find((s: any) => s.id === editingId) : null;
 
+  const handleDelete = async (id: string, nome: string) => {
+    if (!confirm(`Excluir "${nome}"?`)) return;
+    const { error } = await supabase.from("suplentes").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Excluído com sucesso" });
+      refetch();
+    }
+  };
+
   if (editing) {
     return (
       <div className="space-y-4">
-        <button onClick={() => setEditingId(null)} className="flex items-center gap-1 text-sm text-primary">
-          <X size={16} /> Voltar à lista
+        <button onClick={() => setEditingId(null)} className="flex items-center gap-1 text-sm text-primary font-medium">
+          <ArrowLeft size={16} /> Voltar à lista
         </button>
         <Cadastro
           initial={editing as any}
@@ -62,12 +75,14 @@ export default function Cadastros() {
 
       <div className="space-y-2">
         {filtered.map((s: any) => (
-          <button
+          <div
             key={s.id}
-            onClick={() => setEditingId(s.id)}
-            className="w-full text-left bg-card rounded-xl border border-border p-4 flex items-center gap-3 active:bg-secondary transition-colors"
+            className="bg-card rounded-2xl border border-border p-4 flex items-center gap-3 shadow-sm"
           >
-            <div className="flex-1 min-w-0 space-y-1">
+            <button
+              onClick={() => setEditingId(s.id)}
+              className="flex-1 min-w-0 text-left space-y-1"
+            >
               <p className="font-semibold text-foreground truncate">{s.nome}</p>
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 {s.regiao_atuacao && (
@@ -76,9 +91,14 @@ export default function Cadastros() {
                 <span className="flex items-center gap-1"><Vote size={12} /> {s.total_votos} votos</span>
                 <span className="flex items-center gap-1 text-primary font-medium"><DollarSign size={12} /> {fmt(s.total_campanha)}</span>
               </div>
+            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(s.id, s.nome)}>
+                <Trash2 size={16} />
+              </Button>
+              <ChevronRight size={20} className="text-muted-foreground" />
             </div>
-            <ChevronRight size={20} className="text-muted-foreground shrink-0" />
-          </button>
+          </div>
         ))}
       </div>
     </div>

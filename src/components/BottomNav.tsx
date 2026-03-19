@@ -6,11 +6,11 @@ export function BottomNav() {
   const { signOut } = useAuth();
 
   const linkClass = "flex flex-col items-center gap-1 text-[10px] py-2 px-3 rounded-lg transition-colors text-muted-foreground";
-  const activeClass = "text-primary bg-primary/10";
+  const activeClass = "text-primary bg-primary/10 font-semibold";
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur border-t border-border safe-area-bottom">
-      <div className="flex justify-around items-center max-w-lg mx-auto px-2 pb-1">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur border-t border-border">
+      <div className="flex justify-around items-center max-w-lg mx-auto px-2 pb-[env(safe-area-inset-bottom)]">
         <NavLink to="/" end className={linkClass} activeClassName={activeClass}>
           <PlusCircle size={22} />
           <span>Cadastrar</span>
@@ -23,7 +23,7 @@ export function BottomNav() {
           <BarChart3 size={22} />
           <span>Dashboard</span>
         </NavLink>
-        <button onClick={signOut} className={`${linkClass} border-0 bg-transparent`}>
+        <button onClick={signOut} className={`${linkClass} border-0 bg-transparent cursor-pointer`}>
           <LogOut size={22} />
           <span>Sair</span>
         </button>

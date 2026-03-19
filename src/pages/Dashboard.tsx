@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Users, DollarSign, Vote, MapPin, TrendingUp } from "lucide-react";
+import { Users, DollarSign, Vote, TrendingUp, MapPin } from "lucide-react";
 
 export default function Dashboard() {
   const { data: suplentes } = useQuery({
@@ -28,32 +28,28 @@ export default function Dashboard() {
     <div className="space-y-4">
       <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
 
-      {/* Cards de resumo */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard icon={Users} label="Candidatos" value={totalCadastros.toString()} color="text-primary" />
-        <StatCard icon={Vote} label="Votos (passada)" value={fmtN(totalVotos)} color="text-blue-400" />
-        <StatCard icon={TrendingUp} label="Expectativa" value={fmtN(totalExpectativa)} color="text-green-400" />
-        <StatCard icon={Users} label="Pessoas de Campo" value={fmtN(totalPessoas)} color="text-yellow-400" />
+        <StatCard icon={Users} label="Candidatos" value={totalCadastros.toString()} />
+        <StatCard icon={Vote} label="Votos (passada)" value={fmtN(totalVotos)} />
+        <StatCard icon={TrendingUp} label="Expectativa" value={fmtN(totalExpectativa)} />
+        <StatCard icon={Users} label="Pessoas de Campo" value={fmtN(totalPessoas)} />
       </div>
 
-      {/* Total geral */}
-      <div className="bg-gradient-to-r from-primary/20 to-pink-500/20 rounded-xl border border-primary/30 p-5">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-          <DollarSign size={16} className="text-primary" /> Valor Total das Campanhas
+      <div className="bg-gradient-to-r from-pink-500 to-rose-400 rounded-2xl p-5 shadow-lg">
+        <div className="flex items-center gap-2 text-sm text-white/80 mb-1">
+          <DollarSign size={16} /> Valor Total das Campanhas
         </div>
-        <p className="text-3xl font-bold text-primary">{fmt(totalCampanha)}</p>
+        <p className="text-3xl font-bold text-white">{fmt(totalCampanha)}</p>
       </div>
 
-      {/* Detalhamento */}
-      <div className="bg-card rounded-xl border border-border p-4 space-y-3">
+      <div className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
         <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Detalhamento</h2>
         <DetailRow label="Total Lideranças" value={fmtN(totalLiderancas)} />
         <DetailRow label="Total Fiscais" value={fmtN(totalFiscais)} />
         <DetailRow label="Total Pessoas de Campo" value={fmtN(totalPessoas)} />
       </div>
 
-      {/* Tabela resumo por candidato */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
         <h2 className="text-sm font-semibold text-primary uppercase tracking-wider p-4 pb-2">Resumo por Candidato</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -69,7 +65,7 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {list.map((s: any) => (
-                <tr key={s.id} className="border-b border-border/50 hover:bg-secondary/30">
+                <tr key={s.id} className="border-b border-border/50 hover:bg-muted/50">
                   <td className="p-3 font-medium text-foreground whitespace-nowrap">{s.nome}</td>
                   <td className="p-3 text-muted-foreground whitespace-nowrap">
                     <span className="flex items-center gap-1"><MapPin size={12} />{s.regiao_atuacao}</span>
@@ -80,8 +76,7 @@ export default function Dashboard() {
                   <td className="p-3 text-right font-medium text-primary">{fmt(Number(s.total_campanha) || 0)}</td>
                 </tr>
               ))}
-              {/* Total row */}
-              <tr className="bg-secondary/50 font-bold">
+              <tr className="bg-muted font-bold">
                 <td className="p-3" colSpan={2}>TOTAL</td>
                 <td className="p-3 text-right">{fmtN(totalVotos)}</td>
                 <td className="p-3 text-right">{fmtN(totalExpectativa)}</td>
@@ -96,11 +91,11 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: string; color: string }) {
+function StatCard({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
   return (
-    <div className="bg-card rounded-xl border border-border p-4 space-y-1">
+    <div className="bg-card rounded-2xl border border-border p-4 space-y-1 shadow-sm">
       <div className="flex items-center gap-2">
-        <Icon size={16} className={color} />
+        <Icon size={16} className="text-primary" />
         <span className="text-xs text-muted-foreground">{label}</span>
       </div>
       <p className="text-2xl font-bold text-foreground">{value}</p>

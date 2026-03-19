@@ -4,44 +4,44 @@
 
 @layer base {
   :root {
-    --background: 240 10% 6%;
-    --foreground: 0 0% 95%;
+    --background: 0 0% 100%;
+    --foreground: 220 20% 15%;
 
-    --card: 240 10% 10%;
-    --card-foreground: 0 0% 95%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 15%;
 
-    --popover: 240 10% 10%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 15%;
 
-    --primary: 330 80% 60%;
+    --primary: 340 82% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 10% 16%;
-    --secondary-foreground: 0 0% 90%;
+    --secondary: 340 30% 96%;
+    --secondary-foreground: 220 20% 25%;
 
-    --muted: 240 8% 14%;
-    --muted-foreground: 240 5% 55%;
+    --muted: 220 10% 96%;
+    --muted-foreground: 220 10% 45%;
 
-    --accent: 330 80% 60%;
+    --accent: 340 82% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 8% 18%;
-    --input: 240 8% 18%;
-    --ring: 330 80% 60%;
+    --border: 220 10% 90%;
+    --input: 220 10% 90%;
+    --ring: 340 82% 55%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 240 10% 8%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 330 80% 60%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 220 20% 25%;
+    --sidebar-primary: 340 82% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 10% 14%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 240 8% 18%;
-    --sidebar-ring: 330 80% 60%;
+    --sidebar-accent: 340 30% 96%;
+    --sidebar-accent-foreground: 220 20% 25%;
+    --sidebar-border: 220 10% 90%;
+    --sidebar-ring: 340 82% 55%;
   }
 }
 
@@ -55,23 +55,14 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Custom scrollbar for dark theme */
   ::-webkit-scrollbar {
     width: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: hsl(240 10% 8%);
+    background: hsl(0 0% 96%);
   }
   ::-webkit-scrollbar-thumb {
-    background: hsl(240 8% 25%);
+    background: hsl(220 10% 80%);
     border-radius: 3px;
   }
-}
-
-/* Network background animation */
-.bg-network {
-  background: 
-    radial-gradient(circle at 20% 50%, hsl(330 80% 60% / 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, hsl(330 80% 60% / 0.05) 0%, transparent 50%),
-    radial-gradient(circle at 50% 80%, hsl(330 80% 60% / 0.03) 0%, transparent 50%);
 }
