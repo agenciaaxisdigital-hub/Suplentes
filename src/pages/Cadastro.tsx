@@ -135,7 +135,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
             </Select>
           </Field>
           <Field label="Ano Eleição">
-            <Input type="number" value={form.ano_eleicao} onChange={(e) => setNum("ano_eleicao", e.target.value)} className="bg-muted" />
+            <Input type="number" value={form.ano_eleicao} onChange={(e) => setNum("ano_eleicao", e.target.value)} className="bg-card shadow-sm border-border" />
           </Field>
         </div>
 
