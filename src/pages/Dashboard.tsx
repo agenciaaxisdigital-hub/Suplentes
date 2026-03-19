@@ -141,7 +141,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 border-t border-border divide-x divide-border bg-muted/40">
+              <div className="grid grid-cols-3 border-t border-border divide-x divide-border bg-muted/40">
                 <div className="py-2 px-1 text-center">
                   <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Votos</p>
                   <p className="text-sm font-bold text-foreground">{fmtN(s.total_votos || 0)}</p>
@@ -154,16 +154,25 @@ export default function Dashboard() {
                   <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Pessoas</p>
                   <p className="text-sm font-bold text-foreground">{fmtN(pessoas)}</p>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-4 border-t border-border divide-x divide-border bg-muted/40">
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Líder.</p>
+                  <p className="text-sm font-bold text-foreground">{fmtN(liderancas)}</p>
+                </div>
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Fiscais</p>
+                  <p className="text-sm font-bold text-foreground">{fmtN(fiscais)}</p>
+                </div>
                 <div className="py-2 px-1 text-center">
                   <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Plotag.</p>
                   <p className="text-sm font-bold text-foreground">{fmtN(plotagem)}</p>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between px-4 py-2 border-t border-border text-[10px] text-muted-foreground">
-                <span className="flex items-center gap-1"><UserCheck size={10} /> {liderancas} líd.</span>
-                <span className="flex items-center gap-1"><Eye size={10} /> {fiscais} fisc.</span>
-                <span className="flex items-center gap-1"><Banknote size={10} /> {fmt(retirada)} ret.</span>
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Retirada</p>
+                  <p className="text-xs font-bold text-foreground">{fmt(retirada)}</p>
+                </div>
               </div>
             </div>
           );
