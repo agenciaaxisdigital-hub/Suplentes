@@ -1,5 +1,5 @@
 import { NavLink } from "@/components/NavLink";
-import { PlusCircle, List, BarChart3, LogOut } from "lucide-react";
+import { PlusCircle, List, BarChart3, LogOut, UserPlus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 export function BottomNav() {
@@ -32,6 +32,14 @@ export function BottomNav() {
         >
           <BarChart3 size={22} strokeWidth={1.8} />
           <span>Dashboard</span>
+        </NavLink>
+        <NavLink
+          to="/usuarios"
+          className="flex flex-col items-center gap-0.5 text-[10px] py-2 px-4 rounded-xl transition-all text-muted-foreground"
+          activeClassName="text-primary bg-primary/10 font-semibold scale-105"
+        >
+          <UserPlus size={22} strokeWidth={1.8} />
+          <span>Usuários</span>
         </NavLink>
         <button
           onClick={signOut}
