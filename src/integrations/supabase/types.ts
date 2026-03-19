@@ -17,6 +17,7 @@ export type Database = {
       suplentes: {
         Row: {
           ano_eleicao: number | null
+          assinatura: string | null
           base_politica: string | null
           cargo_disputado: string | null
           created_at: string
@@ -41,6 +42,7 @@ export type Database = {
         }
         Insert: {
           ano_eleicao?: number | null
+          assinatura?: string | null
           base_politica?: string | null
           cargo_disputado?: string | null
           created_at?: string
@@ -65,6 +67,7 @@ export type Database = {
         }
         Update: {
           ano_eleicao?: number | null
+          assinatura?: string | null
           base_politica?: string | null
           cargo_disputado?: string | null
           created_at?: string

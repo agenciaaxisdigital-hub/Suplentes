@@ -150,6 +150,36 @@ export function exportSuplentePDF(s: any) {
     styles: { cellPadding: 3 },
   });
 
+  // Assinatura (se existir)
+  const finalY = (doc as any).lastAutoTable?.finalY || 200;
+  if (s.assinatura) {
+    let sigY = finalY + 12;
+    // Check if we need a new page
+    const pageH = doc.internal.pageSize.getHeight();
+    if (sigY + 40 > pageH - 20) {
+      doc.addPage();
+      sigY = 30;
+    }
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...PINK);
+    doc.text("ASSINATURA DO CANDIDATO", 14, sigY);
+    sigY += 4;
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(14, sigY + 28, w - 14, sigY + 28);
+    try {
+      doc.addImage(s.assinatura, "PNG", 14, sigY, 80, 26);
+    } catch (e) {
+      // fallback if image fails
+    }
+    sigY += 32;
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...GRAY);
+    doc.text(s.nome || "", 14, sigY);
+  }
+
   addFooter(doc);
   doc.save(`Ficha_${(s.nome || "suplente").replace(/\s+/g, "_")}.pdf`);
 }
