@@ -4,10 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, LogIn } from "lucide-react";
+import { Eye, EyeOff, LogIn, Lock, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const EMAIL_DOMAIN = "@painel.sarelli.com";
+
+const DOCTOR_PHOTO =
+  "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -19,58 +22,113 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const email = username.includes("@") ? username : username.toLowerCase().replace(/\s+/g, "") + EMAIL_DOMAIN;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const email = username.includes("@")
+      ? username
+      : username.toLowerCase().replace(/\s+/g, "") + EMAIL_DOMAIN;
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     setLoading(false);
     if (error) {
-      toast({ title: "Erro no login", description: "Usuário ou senha incorretos", variant: "destructive" });
+      toast({
+        title: "Erro no login",
+        description: "Usuário ou senha incorretos",
+        variant: "destructive",
+      });
     } else {
       navigate("/");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-400 to-pink-300 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="text-center space-y-2">
-          <div className="w-20 h-20 mx-auto rounded-full bg-white/20 backdrop-blur flex items-center justify-center mb-4">
-            <span className="text-3xl font-bold text-white">FS</span>
+    <div className="min-h-[100dvh] bg-gradient-to-b from-[hsl(340,60%,15%)] via-[hsl(340,50%,12%)] to-[hsl(240,10%,6%)] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Ambient glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[radial-gradient(ellipse,hsl(340_82%_55%/0.15),transparent_70%)] pointer-events-none" />
+
+      <div className="w-full max-w-sm space-y-6 relative z-10">
+        {/* Photo + Identity */}
+        <div className="text-center space-y-3">
+          <div className="relative mx-auto w-28 h-28">
+            {/* Pink ring */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-pink-500 to-rose-400 p-[3px]">
+              <div className="w-full h-full rounded-full overflow-hidden bg-[hsl(240,10%,6%)]">
+                <img
+                  src={DOCTOR_PHOTO}
+                  alt="Dra. Fernanda Sarelli"
+                  className="w-full h-full object-cover"
+                  loading="eager"
+                  fetchPriority="high"
+                />
+              </div>
+            </div>
+            {/* Online indicator */}
+            <div className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-[hsl(240,10%,6%)]" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Painel de Suplentes</h1>
-          <p className="text-sm text-white/80">Dra. Fernanda Sarelli</p>
-          <p className="text-xs text-white/60">Acesso restrito à equipe</p>
+
+          <div>
+            <h1 className="text-xl font-bold text-white tracking-tight">
+              Dra. Fernanda Sarelli
+            </h1>
+            <p className="text-xs font-medium text-pink-400 uppercase tracking-widest mt-1">
+              Painel de Suplentes
+            </p>
+          </div>
+
+          <p className="text-[11px] text-white/40">
+            Acesso exclusivo da equipe
+          </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4 bg-white/10 backdrop-blur-lg p-6 rounded-2xl border border-white/20 shadow-2xl">
-          <div className="space-y-2">
-            <Label className="text-xs uppercase tracking-wider text-white/70">Usuário</Label>
-            <Input
-              type="text"
-              placeholder="Ex: Administrador"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-white/50"
-            />
+        {/* Login form */}
+        <form
+          onSubmit={handleLogin}
+          className="space-y-4 bg-white/[0.04] backdrop-blur-xl p-6 rounded-2xl border border-white/[0.08] shadow-[0_8px_32px_hsl(340_82%_55%/0.08)]"
+        >
+          <div className="space-y-1.5">
+            <Label className="text-[11px] uppercase tracking-widest text-white/50 font-medium">
+              Usuário
+            </Label>
+            <div className="relative">
+              <User
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"
+              />
+              <Input
+                type="text"
+                placeholder="Ex: Administrador"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="bg-white/[0.06] border-white/[0.1] text-white placeholder:text-white/25 focus:border-pink-500/50 focus:ring-pink-500/20 h-11 pl-10 text-sm"
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs uppercase tracking-wider text-white/70">Senha</Label>
+          <div className="space-y-1.5">
+            <Label className="text-[11px] uppercase tracking-widest text-white/50 font-medium">
+              Senha
+            </Label>
             <div className="relative">
+              <Lock
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"
+              />
               <Input
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-white/50 pr-10"
+                className="bg-white/[0.06] border-white/[0.1] text-white placeholder:text-white/25 focus:border-pink-500/50 focus:ring-pink-500/20 h-11 pl-10 pr-10 text-sm"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                tabIndex={-1}
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
@@ -78,15 +136,36 @@ export default function Login() {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-white text-pink-600 hover:bg-white/90 font-semibold h-12 text-base shadow-lg"
+            className="w-full bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-600 hover:to-rose-500 text-white font-semibold h-11 text-sm shadow-[0_4px_16px_hsl(340_82%_55%/0.3)] transition-all active:scale-[0.98]"
           >
-            {loading ? "Entrando..." : <><LogIn size={18} /> Entrar</>}
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Entrando...
+              </div>
+            ) : (
+              <span className="flex items-center gap-2">
+                <LogIn size={16} />
+                Entrar
+              </span>
+            )}
           </Button>
         </form>
 
-        <p className="text-center text-[10px] text-white/40">
-          Pré-candidata a Deputada Estadual — GO 2026
-        </p>
+        {/* Footer */}
+        <div className="text-center space-y-1">
+          <p className="text-[10px] text-white/25">
+            Pré-candidata a Deputada Estadual — GO 2026
+          </p>
+          <a
+            href="https://drafernandasarelli.com.br"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] text-pink-500/50 hover:text-pink-400 transition-colors"
+          >
+            drafernandasarelli.com.br
+          </a>
+        </div>
       </div>
     </div>
   );
