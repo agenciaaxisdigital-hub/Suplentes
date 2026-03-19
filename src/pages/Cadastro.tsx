@@ -72,7 +72,6 @@ export default function Cadastro({ initial, onSaved }: Props) {
   const liderancasTotal = useMemo(() => form.liderancas_qtd * form.liderancas_valor_unit, [form.liderancas_qtd, form.liderancas_valor_unit]);
   const fiscaisTotal = useMemo(() => form.fiscais_qtd * form.fiscais_valor_unit, [form.fiscais_qtd, form.fiscais_valor_unit]);
   const totalCampanha = useMemo(() => retiradaTotal + plotagemTotal + liderancasTotal + fiscaisTotal, [retiradaTotal, plotagemTotal, liderancasTotal, fiscaisTotal]);
-
   const totalPessoas = useMemo(() => form.liderancas_qtd + form.fiscais_qtd, [form.liderancas_qtd, form.fiscais_qtd]);
 
   const handleSave = async () => {
@@ -109,25 +108,25 @@ export default function Cadastro({ initial, onSaved }: Props) {
       </div>
 
       {/* Dados pessoais */}
-      <section className="bg-card rounded-xl border border-border p-4 space-y-3">
+      <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
         <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Dados do Candidato</h2>
 
         <Field label="Nome" required>
-          <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Nome completo" className="bg-secondary" />
+          <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Nome completo" className="bg-muted" />
         </Field>
 
         <Field label="Região de Atuação">
-          <Input value={form.regiao_atuacao} onChange={(e) => set("regiao_atuacao", e.target.value)} placeholder="Ex: Garavelo" className="bg-secondary" />
+          <Input value={form.regiao_atuacao} onChange={(e) => set("regiao_atuacao", e.target.value)} placeholder="Ex: Garavelo" className="bg-muted" />
         </Field>
 
         <Field label="Telefone">
-          <Input value={form.telefone} onChange={(e) => set("telefone", e.target.value)} placeholder="(62) 99999-9999" className="bg-secondary" />
+          <Input value={form.telefone} onChange={(e) => set("telefone", e.target.value)} placeholder="(62) 99999-9999" className="bg-muted" />
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Cargo">
             <Select value={form.cargo_disputado} onValueChange={(v) => set("cargo_disputado", v)}>
-              <SelectTrigger className="bg-secondary"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="bg-muted"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Vereador">Vereador</SelectItem>
                 <SelectItem value="Deputado Estadual">Dep. Estadual</SelectItem>
@@ -136,17 +135,17 @@ export default function Cadastro({ initial, onSaved }: Props) {
             </Select>
           </Field>
           <Field label="Ano Eleição">
-            <Input type="number" value={form.ano_eleicao} onChange={(e) => setNum("ano_eleicao", e.target.value)} className="bg-secondary" />
+            <Input type="number" value={form.ano_eleicao} onChange={(e) => setNum("ano_eleicao", e.target.value)} className="bg-muted" />
           </Field>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Partido">
-            <Input value={form.partido} onChange={(e) => set("partido", e.target.value)} className="bg-secondary" />
+            <Input value={form.partido} onChange={(e) => set("partido", e.target.value)} className="bg-muted" />
           </Field>
           <Field label="Situação">
             <Select value={form.situacao} onValueChange={(v) => set("situacao", v)}>
-              <SelectTrigger className="bg-secondary"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="bg-muted"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Suplente">Suplente</SelectItem>
                 <SelectItem value="Eleito">Eleito</SelectItem>
@@ -158,66 +157,35 @@ export default function Cadastro({ initial, onSaved }: Props) {
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Votos Eleição Passada">
-            <Input type="number" value={form.total_votos} onChange={(e) => setNum("total_votos", e.target.value)} className="bg-secondary" />
+            <Input type="number" value={form.total_votos} onChange={(e) => setNum("total_votos", e.target.value)} className="bg-muted" />
           </Field>
           <Field label="Expectativa de Votos">
-            <Input type="number" value={form.expectativa_votos} onChange={(e) => setNum("expectativa_votos", e.target.value)} className="bg-secondary" />
+            <Input type="number" value={form.expectativa_votos} onChange={(e) => setNum("expectativa_votos", e.target.value)} className="bg-muted" />
           </Field>
         </div>
 
         <Field label="Base Política">
-          <Textarea value={form.base_politica} onChange={(e) => set("base_politica", e.target.value)} placeholder="Associações, lideranças, comércios..." className="bg-secondary min-h-[60px]" />
+          <Textarea value={form.base_politica} onChange={(e) => set("base_politica", e.target.value)} placeholder="Associações, lideranças, comércios..." className="bg-muted min-h-[60px]" />
         </Field>
       </section>
 
       {/* Valores financeiros */}
-      <section className="bg-card rounded-xl border border-border p-4 space-y-4">
+      <section className="bg-card rounded-2xl border border-border p-4 space-y-4 shadow-sm">
         <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
           <Calculator size={16} /> Valores da Campanha
         </h2>
 
-        <CalcRow
-          label="Retirada Mensal"
-          val1={form.retirada_mensal_valor} label1="Valor (R$)"
-          val2={form.retirada_mensal_meses} label2="Meses"
-          onChange1={(v) => setNum("retirada_mensal_valor", v)}
-          onChange2={(v) => setNum("retirada_mensal_meses", v)}
-          total={retiradaTotal}
-        />
-
-        <CalcRow
-          label="Plotagem"
-          val1={form.plotagem_qtd} label1="Qtd"
-          val2={form.plotagem_valor_unit} label2="Valor Unit. (R$)"
-          onChange1={(v) => setNum("plotagem_qtd", v)}
-          onChange2={(v) => setNum("plotagem_valor_unit", v)}
-          total={plotagemTotal}
-        />
-
-        <CalcRow
-          label="Lideranças na Campanha"
-          val1={form.liderancas_qtd} label1="Qtd"
-          val2={form.liderancas_valor_unit} label2="Valor Unit. (R$)"
-          onChange1={(v) => setNum("liderancas_qtd", v)}
-          onChange2={(v) => setNum("liderancas_valor_unit", v)}
-          total={liderancasTotal}
-        />
-
-        <CalcRow
-          label="Fiscais no Dia da Eleição"
-          val1={form.fiscais_qtd} label1="Qtd"
-          val2={form.fiscais_valor_unit} label2="Valor Unit. (R$)"
-          onChange1={(v) => setNum("fiscais_qtd", v)}
-          onChange2={(v) => setNum("fiscais_valor_unit", v)}
-          total={fiscaisTotal}
-        />
+        <CalcRow label="Retirada Mensal" val1={form.retirada_mensal_valor} label1="Valor (R$)" val2={form.retirada_mensal_meses} label2="Meses" onChange1={(v) => setNum("retirada_mensal_valor", v)} onChange2={(v) => setNum("retirada_mensal_meses", v)} total={retiradaTotal} />
+        <CalcRow label="Plotagem" val1={form.plotagem_qtd} label1="Qtd" val2={form.plotagem_valor_unit} label2="Valor Unit. (R$)" onChange1={(v) => setNum("plotagem_qtd", v)} onChange2={(v) => setNum("plotagem_valor_unit", v)} total={plotagemTotal} />
+        <CalcRow label="Lideranças na Campanha" val1={form.liderancas_qtd} label1="Qtd" val2={form.liderancas_valor_unit} label2="Valor Unit. (R$)" onChange1={(v) => setNum("liderancas_qtd", v)} onChange2={(v) => setNum("liderancas_valor_unit", v)} total={liderancasTotal} />
+        <CalcRow label="Fiscais no Dia da Eleição" val1={form.fiscais_qtd} label1="Qtd" val2={form.fiscais_valor_unit} label2="Valor Unit. (R$)" onChange1={(v) => setNum("fiscais_qtd", v)} onChange2={(v) => setNum("fiscais_valor_unit", v)} total={fiscaisTotal} />
 
         <div className="border-t border-border pt-3 space-y-2">
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>Total Pessoas de Campo</span>
             <span className="font-semibold text-foreground">{totalPessoas}</span>
           </div>
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center bg-gradient-to-r from-pink-500/10 to-rose-400/10 rounded-xl p-3">
             <span className="text-base font-bold text-foreground">TOTAL CAMPANHA</span>
             <span className="text-xl font-bold text-primary">{fmt(totalCampanha)}</span>
           </div>
@@ -227,7 +195,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
       <Button
         onClick={handleSave}
         disabled={saving}
-        className="w-full bg-gradient-to-r from-primary to-pink-400 hover:opacity-90 text-primary-foreground font-semibold h-12 text-base"
+        className="w-full bg-gradient-to-r from-pink-500 to-rose-400 hover:opacity-90 text-white font-semibold h-12 text-base shadow-lg"
       >
         <Save size={20} />
         {saving ? "Salvando..." : initial?.id ? "Atualizar Ficha" : "Salvar Ficha"}
@@ -253,7 +221,7 @@ function CalcRow({ label, val1, label1, val2, label2, onChange1, onChange2, tota
 }) {
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   return (
-    <div className="bg-secondary/50 rounded-lg p-3 space-y-2">
+    <div className="bg-muted rounded-xl p-3 space-y-2">
       <div className="flex justify-between items-center">
         <span className="text-sm font-medium text-foreground">{label}</span>
         <span className="text-sm font-bold text-primary">{fmt(total)}</span>
