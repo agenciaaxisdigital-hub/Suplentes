@@ -1,7 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Users, DollarSign, Vote, TrendingUp, MapPin, ChevronDown, ChevronUp } from "lucide-react";
+import { Users, DollarSign, Vote, TrendingUp, MapPin, ChevronDown, ChevronUp, FileDown, FileSpreadsheet } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { exportAllPDF, exportExcel } from "@/lib/exports";
 
 export default function Dashboard() {
   const [expanded, setExpanded] = useState(false);
@@ -31,7 +33,17 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => exportAllPDF(list)} disabled={list.length === 0}>
+            <FileDown size={14} /> PDF
+          </Button>
+          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => exportExcel(list)} disabled={list.length === 0}>
+            <FileSpreadsheet size={14} /> Excel
+          </Button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-card rounded-2xl border border-border p-4 space-y-1 shadow-sm">
