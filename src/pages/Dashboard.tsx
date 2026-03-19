@@ -95,9 +95,17 @@ export default function Dashboard() {
           <span className="text-sm text-muted-foreground">Total Fiscais</span>
           <span className="text-sm font-semibold text-foreground">{fmtN(totalFiscais)}</span>
         </div>
-        <div className="flex justify-between items-center py-1">
+        <div className="flex justify-between items-center py-1 border-b border-border/50">
+          <span className="text-sm text-muted-foreground">Total Plotagem</span>
+          <span className="text-sm font-semibold text-foreground">{fmtN(totalPlotagem)}</span>
+        </div>
+        <div className="flex justify-between items-center py-1 border-b border-border/50">
           <span className="text-sm text-muted-foreground">Total Pessoas de Campo</span>
           <span className="text-sm font-semibold text-foreground">{fmtN(totalPessoas)}</span>
+        </div>
+        <div className="flex justify-between items-center py-1">
+          <span className="text-sm text-muted-foreground">Total Retirada Mensal</span>
+          <span className="text-sm font-semibold text-foreground">{fmt(totalRetirada)}</span>
         </div>
       </div>
 
