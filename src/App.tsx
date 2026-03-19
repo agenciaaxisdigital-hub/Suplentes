@@ -10,6 +10,7 @@ import Cadastros from "./pages/Cadastros";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import Usuarios from "./pages/Usuarios";
 
 const queryClient = new QueryClient();
 
