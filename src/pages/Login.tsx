@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, LogIn, Lock, User } from "lucide-react";
+import NetworkBackground from "@/components/NetworkBackground";
 import { toast } from "@/hooks/use-toast";
 
 const EMAIL_DOMAIN = "@painel.sarelli.com";
