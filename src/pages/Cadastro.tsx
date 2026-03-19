@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Save, Calculator } from "lucide-react";
+import { Save, Calculator, PenLine, Trash2 } from "lucide-react";
+import SignaturePad from "@/components/SignaturePad";
 
 interface FormData {
   nome: string;
