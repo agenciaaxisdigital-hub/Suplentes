@@ -165,7 +165,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
         </div>
 
         <Field label="Base Política">
-          <Textarea value={form.base_politica} onChange={(e) => set("base_politica", e.target.value)} placeholder="Associações, lideranças, comércios..." className="bg-muted min-h-[60px]" />
+          <Textarea value={form.base_politica} onChange={(e) => set("base_politica", e.target.value)} placeholder="Associações, lideranças, comércios..." className="bg-card shadow-sm border-border min-h-[60px]" />
         </Field>
       </section>
 
