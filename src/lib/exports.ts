@@ -133,14 +133,14 @@ export function exportSuplentePDF(s: any) {
 
   autoTable(doc, {
     startY: y,
-    head: [["Item", "Qtd/Meses", "Valor Unit.", "Subtotal"]],
+    head: [["Item", "Cálculo", "Subtotal"]],
     body: [
-      ["Retirada Mensal", String(s.retirada_mensal_meses || 0), fmt(s.retirada_mensal_valor || 0), fmt(retirada)],
-      ["Plotagem", String(s.plotagem_qtd || 0), fmt(s.plotagem_valor_unit || 0), fmt(plotagem)],
-      ["Lideranças", String(s.liderancas_qtd || 0), fmt(s.liderancas_valor_unit || 0), fmt(liderancas)],
-      ["Fiscais", String(s.fiscais_qtd || 0), fmt(s.fiscais_valor_unit || 0), fmt(fiscais)],
+      ["Retirada Mensal", `${fmt(s.retirada_mensal_valor || 0)} x ${s.retirada_mensal_meses || 0} meses`, fmt(retirada)],
+      ["Plotagem", `${fmtN(s.plotagem_qtd || 0)} x ${fmt(s.plotagem_valor_unit || 0)}`, fmt(plotagem)],
+      ["Lideranças na Campanha", `${fmtN(s.liderancas_qtd || 0)} x ${fmt(s.liderancas_valor_unit || 0)}`, fmt(liderancas)],
+      ["Fiscais no Dia da Eleição", `${fmtN(s.fiscais_qtd || 0)} x ${fmt(s.fiscais_valor_unit || 0)}`, fmt(fiscais)],
     ],
-    foot: [["TOTAL CAMPANHA", "", "", fmt(Number(s.total_campanha) || 0)]],
+    foot: [["TOTAL CAMPANHA", "", fmt(Number(s.total_campanha) || 0)]],
     margin: { left: 14, right: 14 },
     headStyles: { fillColor: [...PINK], textColor: [...WHITE], fontStyle: "bold", fontSize: 8 },
     bodyStyles: { fontSize: 8, textColor: [...DARK] },
