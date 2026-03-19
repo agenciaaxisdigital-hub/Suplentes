@@ -157,10 +157,10 @@ export default function Cadastro({ initial, onSaved }: Props) {
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Votos Eleição Passada">
-            <Input type="number" inputMode="numeric" value={form.total_votos || ""} onChange={(e) => setNum("total_votos", e.target.value)} className="bg-card shadow-sm border-border" />
+            <Input type="number" inputMode="numeric" value={form.total_votos} onChange={(e) => setNum("total_votos", e.target.value)} className="bg-card shadow-sm border-border" />
           </Field>
           <Field label="Expectativa de Votos">
-            <Input type="number" inputMode="numeric" value={form.expectativa_votos || ""} onChange={(e) => setNum("expectativa_votos", e.target.value)} className="bg-card shadow-sm border-border" />
+            <Input type="number" inputMode="numeric" value={form.expectativa_votos} onChange={(e) => setNum("expectativa_votos", e.target.value)} className="bg-card shadow-sm border-border" />
           </Field>
         </div>
 
