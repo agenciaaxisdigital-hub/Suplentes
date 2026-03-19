@@ -143,6 +143,19 @@ export default function Login() {
             </div>
           </div>
 
+          {/* Lembrar credenciais */}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="remember"
+              checked={remember}
+              onCheckedChange={(v) => setRemember(!!v)}
+              className="border-white/20 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
+            />
+            <label htmlFor="remember" className="text-xs text-white/50 cursor-pointer select-none">
+              Lembrar meus dados
+            </label>
+          </div>
+
           <Button
             type="submit"
             disabled={loading}
