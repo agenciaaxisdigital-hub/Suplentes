@@ -49,7 +49,7 @@ export default function Dashboard() {
         <div className="bg-card rounded-2xl border border-border p-4 space-y-1 shadow-sm">
           <div className="flex items-center gap-2">
             <Users size={16} className="text-primary" />
-            <span className="text-xs text-muted-foreground">Candidatos</span>
+            <span className="text-xs text-muted-foreground">Suplentes</span>
           </div>
           <p className="text-2xl font-bold text-foreground">{totalCadastros}</p>
         </div>
