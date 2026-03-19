@@ -185,7 +185,7 @@ export default function Dashboard() {
         {/* Total geral */}
         <div className="bg-gradient-to-r from-pink-500/10 to-rose-400/10 rounded-2xl border border-primary/20 p-4 space-y-2">
           <p className="text-xs font-semibold text-primary uppercase tracking-wider">Total Geral</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <div className="text-center">
               <p className="text-[10px] text-muted-foreground uppercase">Votos</p>
               <p className="text-sm font-bold text-foreground">{fmtN(totalVotos)}</p>
@@ -197,6 +197,24 @@ export default function Dashboard() {
             <div className="text-center">
               <p className="text-[10px] text-muted-foreground uppercase">Pessoas</p>
               <p className="text-sm font-bold text-foreground">{fmtN(totalPessoas)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Plotag.</p>
+              <p className="text-sm font-bold text-foreground">{fmtN(totalPlotagem)}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 pt-1">
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Líder.</p>
+              <p className="text-sm font-bold text-foreground">{fmtN(totalLiderancas)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Fiscais</p>
+              <p className="text-sm font-bold text-foreground">{fmtN(totalFiscais)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Retirada</p>
+              <p className="text-sm font-bold text-foreground">{fmt(totalRetirada)}</p>
             </div>
           </div>
           <div className="flex justify-between items-center pt-2 border-t border-primary/20">
