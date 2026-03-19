@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Users, DollarSign, Vote, TrendingUp, MapPin, ChevronDown, ChevronUp, FileDown, FileSpreadsheet } from "lucide-react";
+import { Users, DollarSign, Vote, TrendingUp, MapPin, ChevronDown, ChevronUp, FileDown, FileSpreadsheet, UserCheck, Eye, Car, Banknote } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { exportAllPDF, exportExcel } from "@/lib/exports";
@@ -25,6 +25,8 @@ export default function Dashboard() {
   const totalFiscais = list.reduce((a: number, s: any) => a + (s.fiscais_qtd || 0), 0);
   const totalPessoas = totalLiderancas + totalFiscais;
   const totalCampanha = list.reduce((a: number, s: any) => a + (Number(s.total_campanha) || 0), 0);
+  const totalPlotagem = list.reduce((a: number, s: any) => a + (s.plotagem_qtd || 0), 0);
+  const totalRetirada = list.reduce((a: number, s: any) => a + ((s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0)), 0);
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const fmtN = (v: number) => v.toLocaleString("pt-BR");
@@ -93,9 +95,17 @@ export default function Dashboard() {
           <span className="text-sm text-muted-foreground">Total Fiscais</span>
           <span className="text-sm font-semibold text-foreground">{fmtN(totalFiscais)}</span>
         </div>
-        <div className="flex justify-between items-center py-1">
+        <div className="flex justify-between items-center py-1 border-b border-border/50">
+          <span className="text-sm text-muted-foreground">Total Plotagem</span>
+          <span className="text-sm font-semibold text-foreground">{fmtN(totalPlotagem)}</span>
+        </div>
+        <div className="flex justify-between items-center py-1 border-b border-border/50">
           <span className="text-sm text-muted-foreground">Total Pessoas de Campo</span>
           <span className="text-sm font-semibold text-foreground">{fmtN(totalPessoas)}</span>
+        </div>
+        <div className="flex justify-between items-center py-1">
+          <span className="text-sm text-muted-foreground">Total Retirada Mensal</span>
+          <span className="text-sm font-semibold text-foreground">{fmt(totalRetirada)}</span>
         </div>
       </div>
 
@@ -104,35 +114,56 @@ export default function Dashboard() {
         <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Resumo por Candidato</h2>
 
         {visibleList.map((s: any) => {
-          const pessoas = (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0);
+          const liderancas = s.liderancas_qtd || 0;
+          const fiscais = s.fiscais_qtd || 0;
+          const pessoas = liderancas + fiscais;
+          const plotagem = s.plotagem_qtd || 0;
+          const retirada = (s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0);
           return (
-            <div key={s.id} className="bg-card rounded-2xl border border-border p-4 shadow-sm space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="font-semibold text-foreground text-sm truncate">{s.nome}</p>
-                  {s.regiao_atuacao && (
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <MapPin size={10} /> {s.regiao_atuacao}
-                    </p>
-                  )}
+            <div key={s.id} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+              <div className="p-4 pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-foreground text-sm truncate">{s.nome}</p>
+                    {s.regiao_atuacao && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <MapPin size={10} className="text-primary" /> {s.regiao_atuacao}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-x-2 mt-0.5">
+                      {s.partido && <span className="text-[10px] text-muted-foreground">{s.partido}</span>}
+                      {s.situacao && <span className="text-[10px] font-medium text-primary uppercase">{s.situacao}</span>}
+                    </div>
+                  </div>
+                  <span className="text-sm font-bold text-primary whitespace-nowrap">
+                    {fmt(Number(s.total_campanha) || 0)}
+                  </span>
                 </div>
-                <span className="text-sm font-bold text-primary whitespace-nowrap">
-                  {fmt(Number(s.total_campanha) || 0)}
-                </span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-muted rounded-lg p-2 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase">Votos</p>
+
+              <div className="grid grid-cols-4 border-t border-border divide-x divide-border bg-muted/40">
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Votos</p>
                   <p className="text-sm font-bold text-foreground">{fmtN(s.total_votos || 0)}</p>
                 </div>
-                <div className="bg-muted rounded-lg p-2 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase">Expect.</p>
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Expect.</p>
                   <p className="text-sm font-bold text-foreground">{fmtN(s.expectativa_votos || 0)}</p>
                 </div>
-                <div className="bg-muted rounded-lg p-2 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase">Pessoas</p>
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Pessoas</p>
                   <p className="text-sm font-bold text-foreground">{fmtN(pessoas)}</p>
                 </div>
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Plotag.</p>
+                  <p className="text-sm font-bold text-foreground">{fmtN(plotagem)}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between px-4 py-2 border-t border-border text-[10px] text-muted-foreground">
+                <span className="flex items-center gap-1"><UserCheck size={10} /> {liderancas} líd.</span>
+                <span className="flex items-center gap-1"><Eye size={10} /> {fiscais} fisc.</span>
+                <span className="flex items-center gap-1"><Banknote size={10} /> {fmt(retirada)} ret.</span>
               </div>
             </div>
           );
@@ -154,7 +185,7 @@ export default function Dashboard() {
         {/* Total geral */}
         <div className="bg-gradient-to-r from-pink-500/10 to-rose-400/10 rounded-2xl border border-primary/20 p-4 space-y-2">
           <p className="text-xs font-semibold text-primary uppercase tracking-wider">Total Geral</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <div className="text-center">
               <p className="text-[10px] text-muted-foreground uppercase">Votos</p>
               <p className="text-sm font-bold text-foreground">{fmtN(totalVotos)}</p>
@@ -166,6 +197,24 @@ export default function Dashboard() {
             <div className="text-center">
               <p className="text-[10px] text-muted-foreground uppercase">Pessoas</p>
               <p className="text-sm font-bold text-foreground">{fmtN(totalPessoas)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Plotag.</p>
+              <p className="text-sm font-bold text-foreground">{fmtN(totalPlotagem)}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 pt-1">
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Líder.</p>
+              <p className="text-sm font-bold text-foreground">{fmtN(totalLiderancas)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Fiscais</p>
+              <p className="text-sm font-bold text-foreground">{fmtN(totalFiscais)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Retirada</p>
+              <p className="text-sm font-bold text-foreground">{fmt(totalRetirada)}</p>
             </div>
           </div>
           <div className="flex justify-between items-center pt-2 border-t border-primary/20">
