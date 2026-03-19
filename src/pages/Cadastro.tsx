@@ -40,14 +40,14 @@ const defaultForm: FormData = {
   total_votos: 0,
   expectativa_votos: 0,
   base_politica: "",
-  retirada_mensal_valor: 3000,
-  retirada_mensal_meses: 6,
-  plotagem_qtd: 50,
-  plotagem_valor_unit: 250,
-  liderancas_qtd: 20,
-  liderancas_valor_unit: 1622,
-  fiscais_qtd: 100,
-  fiscais_valor_unit: 110,
+  retirada_mensal_valor: 0,
+  retirada_mensal_meses: 0,
+  plotagem_qtd: 0,
+  plotagem_valor_unit: 0,
+  liderancas_qtd: 0,
+  liderancas_valor_unit: 0,
+  fiscais_qtd: 0,
+  fiscais_valor_unit: 0,
 };
 
 interface Props {
@@ -112,21 +112,21 @@ export default function Cadastro({ initial, onSaved }: Props) {
         <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Dados do Candidato</h2>
 
         <Field label="Nome" required>
-          <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Nome completo" className="bg-muted" />
+          <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Nome completo" className="bg-card shadow-sm border-border" />
         </Field>
 
         <Field label="Região de Atuação">
-          <Input value={form.regiao_atuacao} onChange={(e) => set("regiao_atuacao", e.target.value)} placeholder="Ex: Garavelo" className="bg-muted" />
+          <Input value={form.regiao_atuacao} onChange={(e) => set("regiao_atuacao", e.target.value)} placeholder="Ex: Garavelo" className="bg-card shadow-sm border-border" />
         </Field>
 
         <Field label="Telefone">
-          <Input value={form.telefone} onChange={(e) => set("telefone", e.target.value)} placeholder="(62) 99999-9999" className="bg-muted" />
+          <Input value={form.telefone} onChange={(e) => set("telefone", e.target.value)} placeholder="(62) 99999-9999" className="bg-card shadow-sm border-border" />
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Cargo">
             <Select value={form.cargo_disputado} onValueChange={(v) => set("cargo_disputado", v)}>
-              <SelectTrigger className="bg-muted"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="bg-card shadow-sm border-border"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Vereador">Vereador</SelectItem>
                 <SelectItem value="Deputado Estadual">Dep. Estadual</SelectItem>
@@ -135,17 +135,17 @@ export default function Cadastro({ initial, onSaved }: Props) {
             </Select>
           </Field>
           <Field label="Ano Eleição">
-            <Input type="number" value={form.ano_eleicao} onChange={(e) => setNum("ano_eleicao", e.target.value)} className="bg-muted" />
+            <Input type="number" value={form.ano_eleicao} onChange={(e) => setNum("ano_eleicao", e.target.value)} className="bg-card shadow-sm border-border" />
           </Field>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Partido">
-            <Input value={form.partido} onChange={(e) => set("partido", e.target.value)} className="bg-muted" />
+            <Input value={form.partido} onChange={(e) => set("partido", e.target.value)} className="bg-card shadow-sm border-border" />
           </Field>
           <Field label="Situação">
             <Select value={form.situacao} onValueChange={(v) => set("situacao", v)}>
-              <SelectTrigger className="bg-muted"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="bg-card shadow-sm border-border"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Suplente">Suplente</SelectItem>
                 <SelectItem value="Eleito">Eleito</SelectItem>
@@ -157,15 +157,15 @@ export default function Cadastro({ initial, onSaved }: Props) {
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Votos Eleição Passada">
-            <Input type="number" value={form.total_votos} onChange={(e) => setNum("total_votos", e.target.value)} className="bg-muted" />
+            <Input type="number" value={form.total_votos} onChange={(e) => setNum("total_votos", e.target.value)} className="bg-card shadow-sm border-border" />
           </Field>
           <Field label="Expectativa de Votos">
-            <Input type="number" value={form.expectativa_votos} onChange={(e) => setNum("expectativa_votos", e.target.value)} className="bg-muted" />
+            <Input type="number" value={form.expectativa_votos} onChange={(e) => setNum("expectativa_votos", e.target.value)} className="bg-card shadow-sm border-border" />
           </Field>
         </div>
 
         <Field label="Base Política">
-          <Textarea value={form.base_politica} onChange={(e) => set("base_politica", e.target.value)} placeholder="Associações, lideranças, comércios..." className="bg-muted min-h-[60px]" />
+          <Textarea value={form.base_politica} onChange={(e) => set("base_politica", e.target.value)} placeholder="Associações, lideranças, comércios..." className="bg-card shadow-sm border-border min-h-[60px]" />
         </Field>
       </section>
 
@@ -221,7 +221,7 @@ function CalcRow({ label, val1, label1, val2, label2, onChange1, onChange2, tota
 }) {
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   return (
-    <div className="bg-muted rounded-xl p-3 space-y-2">
+    <div className="bg-muted/50 rounded-xl p-3 space-y-2 shadow-sm">
       <div className="flex justify-between items-center">
         <span className="text-sm font-medium text-foreground">{label}</span>
         <span className="text-sm font-bold text-primary">{fmt(total)}</span>
@@ -229,11 +229,11 @@ function CalcRow({ label, val1, label1, val2, label2, onChange1, onChange2, tota
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label className="text-[10px] text-muted-foreground">{label1}</Label>
-          <Input type="number" value={val1} onChange={(e) => onChange1(e.target.value)} className="bg-card h-8 text-sm" />
+          <Input type="number" value={val1} onChange={(e) => onChange1(e.target.value)} className="bg-card shadow-sm border-border h-8 text-sm" />
         </div>
         <div>
           <Label className="text-[10px] text-muted-foreground">{label2}</Label>
-          <Input type="number" value={val2} onChange={(e) => onChange2(e.target.value)} className="bg-card h-8 text-sm" />
+          <Input type="number" value={val2} onChange={(e) => onChange2(e.target.value)} className="bg-card shadow-sm border-border h-8 text-sm" />
         </div>
       </div>
     </div>
