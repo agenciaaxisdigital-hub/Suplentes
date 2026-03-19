@@ -81,81 +81,84 @@ export default function Cadastros() {
           const plotagem = (s.plotagem_qtd || 0);
           const pessoas = liderancas + fiscais;
           const retirada = (s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0);
+          const liderancasVal = liderancas * (s.liderancas_valor_unit || 0);
+          const fiscaisVal = fiscais * (s.fiscais_valor_unit || 0);
+          const plotagemVal = plotagem * (s.plotagem_valor_unit || 0);
+          const fmtN = (v: number) => (v || 0).toLocaleString("pt-BR");
 
           return (
             <div key={s.id} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
               {/* Header */}
               <button
                 onClick={() => setEditingId(s.id)}
-                className="w-full text-left p-4 pb-3"
+                className="w-full text-left p-3 pb-2"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-foreground text-sm truncate">{s.nome}</p>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                       {s.regiao_atuacao && (
                         <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                          <MapPin size={11} className="text-primary shrink-0" /> {s.regiao_atuacao}
+                          <MapPin size={10} className="text-primary shrink-0" /> {s.regiao_atuacao}
                         </span>
                       )}
-                      {s.telefone && (
-                        <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                          <Phone size={11} className="shrink-0" /> {s.telefone}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
-                      {s.partido && (
-                        <span className="text-[11px] text-muted-foreground">{s.partido}</span>
-                      )}
-                      {s.cargo_disputado && (
-                        <span className="text-[11px] text-muted-foreground">{s.cargo_disputado} {s.ano_eleicao}</span>
-                      )}
-                      {s.situacao && (
-                        <span className="text-[10px] font-medium uppercase tracking-wider text-primary">{s.situacao}</span>
-                      )}
+                      {s.partido && <span className="text-[11px] text-muted-foreground">{s.partido}</span>}
+                      {s.situacao && <span className="text-[10px] font-medium uppercase tracking-wider text-primary">{s.situacao}</span>}
                     </div>
                   </div>
                   <p className="text-sm font-bold text-primary whitespace-nowrap">{fmt(s.total_campanha)}</p>
                 </div>
               </button>
 
-              {/* Stats row */}
-              <div className="grid grid-cols-4 border-t border-border divide-x divide-border bg-muted/40">
+              {/* Row 1: Votos / Expectativa / Pessoas */}
+              <div className="grid grid-cols-3 border-t border-border divide-x divide-border bg-muted/40">
                 <div className="py-2 px-1 text-center">
                   <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Votos</p>
-                  <p className="text-sm font-bold text-foreground">{(s.total_votos || 0).toLocaleString("pt-BR")}</p>
+                  <p className="text-sm font-bold text-foreground">{fmtN(s.total_votos)}</p>
                 </div>
                 <div className="py-2 px-1 text-center">
                   <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Expect.</p>
-                  <p className="text-sm font-bold text-foreground">{(s.expectativa_votos || 0).toLocaleString("pt-BR")}</p>
+                  <p className="text-sm font-bold text-foreground">{fmtN(s.expectativa_votos)}</p>
                 </div>
                 <div className="py-2 px-1 text-center">
                   <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Pessoas</p>
-                  <p className="text-sm font-bold text-foreground">{pessoas.toLocaleString("pt-BR")}</p>
-                </div>
-                <div className="py-2 px-1 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Plotag.</p>
-                  <p className="text-sm font-bold text-foreground">{plotagem.toLocaleString("pt-BR")}</p>
+                  <p className="text-sm font-bold text-foreground">{fmtN(pessoas)}</p>
                 </div>
               </div>
 
-              {/* Detail row */}
-              <div className="flex items-center justify-between px-4 py-2 border-t border-border text-[10px] text-muted-foreground">
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center gap-1"><UserCheck size={10} /> {liderancas} líd.</span>
-                  <span className="flex items-center gap-1"><Eye size={10} /> {fiscais} fisc.</span>
-                  <span className="flex items-center gap-1"><Banknote size={10} /> {fmt(retirada)} ret.</span>
+              {/* Row 2: Lideranças / Fiscais / Plotagem / Retirada */}
+              <div className="grid grid-cols-4 border-t border-border divide-x divide-border bg-muted/40">
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Líder.</p>
+                  <p className="text-sm font-bold text-foreground">{fmtN(liderancas)}</p>
+                  <p className="text-[9px] text-muted-foreground">{fmt(liderancasVal)}</p>
                 </div>
-                <div className="flex items-center gap-0.5">
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:text-primary" onClick={() => exportSuplentePDF(s)}>
-                    <FileDown size={14} />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(s.id, s.nome)}>
-                    <Trash2 size={14} />
-                  </Button>
-                  <ChevronRight size={16} className="text-muted-foreground" onClick={() => setEditingId(s.id)} />
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Fiscais</p>
+                  <p className="text-sm font-bold text-foreground">{fmtN(fiscais)}</p>
+                  <p className="text-[9px] text-muted-foreground">{fmt(fiscaisVal)}</p>
                 </div>
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Plotag.</p>
+                  <p className="text-sm font-bold text-foreground">{fmtN(plotagem)}</p>
+                  <p className="text-[9px] text-muted-foreground">{fmt(plotagemVal)}</p>
+                </div>
+                <div className="py-2 px-1 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Retirada</p>
+                  <p className="text-xs font-bold text-foreground">{fmt(retirada)}</p>
+                  <p className="text-[9px] text-muted-foreground">{s.retirada_mensal_meses || 0}x {fmt(s.retirada_mensal_valor || 0)}</p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end px-3 py-1.5 border-t border-border gap-0.5">
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:text-primary" onClick={() => exportSuplentePDF(s)}>
+                  <FileDown size={14} />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(s.id, s.nome)}>
+                  <Trash2 size={14} />
+                </Button>
+                <ChevronRight size={16} className="text-muted-foreground cursor-pointer" onClick={() => setEditingId(s.id)} />
               </div>
             </div>
           );
