@@ -1,13 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Users, DollarSign, Vote, TrendingUp, MapPin, ChevronDown, ChevronUp, FileDown, FileSpreadsheet, UserCheck, Eye, Car, Banknote } from "lucide-react";
-import { useState } from "react";
+import { Users, DollarSign, Vote, TrendingUp, MapPin, ChevronDown, ChevronUp, FileDown, FileSpreadsheet, UserCheck, Eye, Car, Banknote, Search } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { exportAllPDF, exportExcel } from "@/lib/exports";
 
 export default function Dashboard() {
   const [expanded, setExpanded] = useState(false);
-
+  const [search, setSearch] = useState("");
   const { data: suplentes } = useQuery({
     queryKey: ["suplentes"],
     queryFn: async () => {
@@ -17,7 +18,16 @@ export default function Dashboard() {
     },
   });
 
-  const list = suplentes ?? [];
+  const list = useMemo(() => {
+    const all = suplentes ?? [];
+    if (!search.trim()) return all;
+    const q = search.toLowerCase();
+    return all.filter((s: any) =>
+      s.nome?.toLowerCase().includes(q) ||
+      s.regiao_atuacao?.toLowerCase().includes(q)
+    );
+  }, [suplentes, search]);
+
   const totalCadastros = list.length;
   const totalVotos = list.reduce((a: number, s: any) => a + (s.total_votos || 0), 0);
   const totalExpectativa = list.reduce((a: number, s: any) => a + (s.expectativa_votos || 0), 0);
@@ -47,6 +57,15 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <div className="relative">
+        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Buscar candidato por nome ou região..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-10 bg-card border-border"
+        />
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-card rounded-2xl border border-border p-4 space-y-1 shadow-sm">
           <div className="flex items-center gap-2">
