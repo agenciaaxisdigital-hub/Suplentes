@@ -33,6 +33,14 @@ export function BottomNav() {
           <BarChart3 size={22} strokeWidth={1.8} />
           <span>Dashboard</span>
         </NavLink>
+        <NavLink
+          to="/usuarios"
+          className="flex flex-col items-center gap-0.5 text-[10px] py-2 px-4 rounded-xl transition-all text-muted-foreground"
+          activeClassName="text-primary bg-primary/10 font-semibold scale-105"
+        >
+          <UserPlus size={22} strokeWidth={1.8} />
+          <span>Usuários</span>
+        </NavLink>
         <button
           onClick={signOut}
           className="flex flex-col items-center gap-0.5 text-[10px] py-2 px-4 rounded-xl transition-all text-muted-foreground border-0 bg-transparent cursor-pointer active:scale-95"
