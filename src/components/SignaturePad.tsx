@@ -96,46 +96,47 @@ export default function SignaturePad({ open, onClose, onSave, initial }: Props) 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] bg-background/95 backdrop-blur-sm">
-      <div className="mx-auto flex h-full w-full max-w-3xl flex-col bg-background">
-        <div className="flex items-center justify-between border-b border-border bg-card px-4 py-3 shrink-0">
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X size={20} />
-          </Button>
-          <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">Assinatura</h2>
-          <Button variant="ghost" size="icon" onClick={clear}>
-            <Eraser size={20} className="text-muted-foreground" />
-          </Button>
-        </div>
+    <div className="fixed inset-0 z-[80] flex flex-col bg-background" style={{ height: "100dvh" }}>
+      {/* Header - fixed height */}
+      <div className="flex items-center justify-between border-b border-border bg-card px-4 py-3 shrink-0">
+        <Button variant="ghost" size="icon" onClick={onClose}>
+          <X size={20} />
+        </Button>
+        <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">Assinatura</h2>
+        <Button variant="ghost" size="icon" onClick={clear}>
+          <Eraser size={20} className="text-muted-foreground" />
+        </Button>
+      </div>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="relative min-h-0 flex-1 bg-card">
-            <canvas
-              ref={canvasRef}
-              className="absolute inset-0 h-full w-full touch-none"
-              onMouseDown={start}
-              onMouseMove={move}
-              onMouseUp={end}
-              onMouseLeave={end}
-              onTouchStart={start}
-              onTouchMove={move}
-              onTouchEnd={end}
-            />
-          </div>
+      {/* Canvas area - takes remaining space minus footer */}
+      <div className="relative flex-1 overflow-hidden bg-card">
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 h-full w-full touch-none"
+          onMouseDown={start}
+          onMouseMove={move}
+          onMouseUp={end}
+          onMouseLeave={end}
+          onTouchStart={start}
+          onTouchMove={move}
+          onTouchEnd={end}
+        />
+      </div>
 
-          <div className="shrink-0 border-t border-border bg-background px-4 py-3 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-3 shadow-[0_-8px_24px_hsl(var(--foreground)/0.08)]">
-            <p className="text-xs text-muted-foreground">Assine acima desta linha</p>
-            <div className="border-b border-dashed border-border" />
-            <Button
-              onClick={save}
-              disabled={!hasContent}
-              className="h-12 w-full font-semibold"
-            >
-              <Check size={20} />
-              Salvar assinatura
-            </Button>
-          </div>
+      {/* Footer - always visible */}
+      <div className="shrink-0 border-t border-border bg-background px-4 py-3 space-y-2" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">Assine acima desta linha</p>
         </div>
+        <div className="border-b border-dashed border-border" />
+        <Button
+          onClick={save}
+          disabled={!hasContent}
+          className="h-12 w-full font-semibold"
+        >
+          <Check size={20} />
+          Salvar assinatura
+        </Button>
       </div>
     </div>
   );
