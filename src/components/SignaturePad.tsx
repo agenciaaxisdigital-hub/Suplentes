@@ -129,7 +129,7 @@ export default function SignaturePad({ open, onClose, onSave, initial }: Props) 
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-border bg-card safe-area-bottom">
+      <div className="px-4 py-3 border-t border-border bg-card pb-[env(safe-area-inset-bottom,12px)]">
         <Button
           onClick={save}
           disabled={!hasContent}
