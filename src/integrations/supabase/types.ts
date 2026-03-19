@@ -14,7 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      suplentes: {
+        Row: {
+          ano_eleicao: number | null
+          base_politica: string | null
+          cargo_disputado: string | null
+          created_at: string
+          expectativa_votos: number | null
+          fiscais_qtd: number | null
+          fiscais_valor_unit: number | null
+          id: string
+          liderancas_qtd: number | null
+          liderancas_valor_unit: number | null
+          nome: string
+          partido: string | null
+          plotagem_qtd: number | null
+          plotagem_valor_unit: number | null
+          regiao_atuacao: string | null
+          retirada_mensal_meses: number | null
+          retirada_mensal_valor: number | null
+          situacao: string | null
+          telefone: string | null
+          total_campanha: number | null
+          total_votos: number | null
+          updated_at: string
+        }
+        Insert: {
+          ano_eleicao?: number | null
+          base_politica?: string | null
+          cargo_disputado?: string | null
+          created_at?: string
+          expectativa_votos?: number | null
+          fiscais_qtd?: number | null
+          fiscais_valor_unit?: number | null
+          id?: string
+          liderancas_qtd?: number | null
+          liderancas_valor_unit?: number | null
+          nome: string
+          partido?: string | null
+          plotagem_qtd?: number | null
+          plotagem_valor_unit?: number | null
+          regiao_atuacao?: string | null
+          retirada_mensal_meses?: number | null
+          retirada_mensal_valor?: number | null
+          situacao?: string | null
+          telefone?: string | null
+          total_campanha?: number | null
+          total_votos?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ano_eleicao?: number | null
+          base_politica?: string | null
+          cargo_disputado?: string | null
+          created_at?: string
+          expectativa_votos?: number | null
+          fiscais_qtd?: number | null
+          fiscais_valor_unit?: number | null
+          id?: string
+          liderancas_qtd?: number | null
+          liderancas_valor_unit?: number | null
+          nome?: string
+          partido?: string | null
+          plotagem_qtd?: number | null
+          plotagem_valor_unit?: number | null
+          regiao_atuacao?: string | null
+          retirada_mensal_meses?: number | null
+          retirada_mensal_valor?: number | null
+          situacao?: string | null
+          telefone?: string | null
+          total_campanha?: number | null
+          total_votos?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
