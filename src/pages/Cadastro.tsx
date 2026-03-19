@@ -141,7 +141,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Partido">
-            <Input value={form.partido} onChange={(e) => set("partido", e.target.value)} className="bg-muted" />
+            <Input value={form.partido} onChange={(e) => set("partido", e.target.value)} className="bg-card shadow-sm border-border" />
           </Field>
           <Field label="Situação">
             <Select value={form.situacao} onValueChange={(v) => set("situacao", v)}>
