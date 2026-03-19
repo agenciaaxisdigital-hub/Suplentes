@@ -109,35 +109,33 @@ export default function SignaturePad({ open, onClose, onSave, initial }: Props) 
       </div>
 
       {/* Canvas */}
-      <div className="flex-1 relative bg-white">
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 w-full h-full touch-none"
-          onMouseDown={start}
-          onMouseMove={move}
-          onMouseUp={end}
-          onMouseLeave={end}
-          onTouchStart={start}
-          onTouchMove={move}
-          onTouchEnd={end}
-        />
-        {/* Guide line */}
-        <div className="absolute bottom-[30%] left-8 right-8 border-b border-dashed border-muted-foreground/30 pointer-events-none" />
-        <p className="absolute bottom-[30%] left-8 -translate-y-2 text-[10px] text-muted-foreground/40 pointer-events-none">
-          Assine acima desta linha
-        </p>
-      </div>
+      <div className="flex-1 flex flex-col min-h-0 bg-background">
+        <div className="relative flex-1 min-h-[280px] bg-white">
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full h-full touch-none"
+            onMouseDown={start}
+            onMouseMove={move}
+            onMouseUp={end}
+            onMouseLeave={end}
+            onTouchStart={start}
+            onTouchMove={move}
+            onTouchEnd={end}
+          />
+        </div>
 
-      {/* Footer */}
-      <div className="px-4 py-3 border-t border-border bg-card pb-[env(safe-area-inset-bottom,12px)]">
-        <Button
-          onClick={save}
-          disabled={!hasContent}
-          className="w-full bg-gradient-to-r from-pink-500 to-rose-400 hover:opacity-90 text-white font-semibold h-12"
-        >
-          <Check size={20} />
-          Confirmar Assinatura
-        </Button>
+        <div className="border-t border-border bg-card px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-3">
+          <p className="text-xs text-muted-foreground">Assine acima desta linha</p>
+          <div className="border-b border-dashed border-muted-foreground/40" />
+          <Button
+            onClick={save}
+            disabled={!hasContent}
+            className="w-full bg-gradient-to-r from-pink-500 to-rose-400 hover:opacity-90 text-white font-semibold h-12"
+          >
+            <Check size={20} />
+            Salvar assinatura
+          </Button>
+        </div>
       </div>
     </div>
   );
