@@ -196,6 +196,35 @@ export default function Cadastro({ initial, onSaved }: Props) {
         </div>
       </section>
 
+      {/* Assinatura */}
+      <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
+        <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+          <PenLine size={16} /> Assinatura do Candidato
+        </h2>
+        <p className="text-xs text-muted-foreground">Opcional — clique para o candidato assinar na tela.</p>
+
+        {form.assinatura ? (
+          <div className="space-y-2">
+            <div className="border border-border rounded-xl p-2 bg-white">
+              <img src={form.assinatura} alt="Assinatura" className="w-full h-24 object-contain" />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowSignature(true)}>
+                <PenLine size={14} /> Refazer
+              </Button>
+              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => set("assinatura", "")}>
+                <Trash2 size={14} /> Remover
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button variant="outline" className="w-full h-20 border-dashed border-2 text-muted-foreground" onClick={() => setShowSignature(true)}>
+            <PenLine size={20} className="mr-2" />
+            Toque para assinar
+          </Button>
+        )}
+      </section>
+
       <Button
         onClick={handleSave}
         disabled={saving}
@@ -204,6 +233,13 @@ export default function Cadastro({ initial, onSaved }: Props) {
         <Save size={20} />
         {saving ? "Salvando..." : initial?.id ? "Atualizar Ficha" : "Salvar Ficha"}
       </Button>
+
+      <SignaturePad
+        open={showSignature}
+        onClose={() => setShowSignature(false)}
+        onSave={(dataUrl) => set("assinatura", dataUrl)}
+        initial={form.assinatura || undefined}
+      />
     </div>
   );
 }
