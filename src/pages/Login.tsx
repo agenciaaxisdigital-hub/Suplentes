@@ -39,7 +39,15 @@ export default function Login() {
         variant: "destructive",
       });
     } else {
+      if (remember) {
+        localStorage.setItem("saved_user", username);
+        localStorage.setItem("saved_pass", password);
+      } else {
+        localStorage.removeItem("saved_user");
+        localStorage.removeItem("saved_pass");
+      }
       navigate("/");
+    }
     }
   };
 
