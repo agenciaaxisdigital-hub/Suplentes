@@ -43,13 +43,13 @@ const defaultForm: FormData = {
   expectativa_votos: 0,
   base_politica: "",
   retirada_mensal_valor: 0,
-  retirada_mensal_meses: 0,
+  retirada_mensal_meses: 6,
   plotagem_qtd: 0,
-  plotagem_valor_unit: 0,
+  plotagem_valor_unit: 250,
   liderancas_qtd: 0,
-  liderancas_valor_unit: 0,
+  liderancas_valor_unit: 1622,
   fiscais_qtd: 0,
-  fiscais_valor_unit: 0,
+  fiscais_valor_unit: 110,
   assinatura: "",
 };
 
