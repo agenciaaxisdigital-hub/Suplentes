@@ -145,7 +145,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
           </Field>
           <Field label="Situação">
             <Select value={form.situacao} onValueChange={(v) => set("situacao", v)}>
-              <SelectTrigger className="bg-muted"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="bg-card shadow-sm border-border"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Suplente">Suplente</SelectItem>
                 <SelectItem value="Eleito">Eleito</SelectItem>
