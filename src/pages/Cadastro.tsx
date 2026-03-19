@@ -116,7 +116,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
         </Field>
 
         <Field label="Região de Atuação">
-          <Input value={form.regiao_atuacao} onChange={(e) => set("regiao_atuacao", e.target.value)} placeholder="Ex: Garavelo" className="bg-muted" />
+          <Input value={form.regiao_atuacao} onChange={(e) => set("regiao_atuacao", e.target.value)} placeholder="Ex: Garavelo" className="bg-card shadow-sm border-border" />
         </Field>
 
         <Field label="Telefone">
