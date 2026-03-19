@@ -43,6 +43,36 @@
     --sidebar-border: 220 10% 90%;
     --sidebar-ring: 340 82% 55%;
   }
+
+  .dark {
+    --background: 240 10% 6%;
+    --foreground: 0 0% 95%;
+
+    --card: 240 10% 9%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 240 10% 9%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 340 82% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 340 20% 15%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 240 8% 14%;
+    --muted-foreground: 220 10% 55%;
+
+    --accent: 340 82% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 8% 16%;
+    --input: 240 8% 16%;
+    --ring: 340 82% 60%;
+  }
 }
 
 @layer base {
@@ -53,16 +83,38 @@
   body {
     @apply bg-background text-foreground;
     -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
+    touch-action: manipulation;
   }
 
+  /* Hide scrollbars for app feel */
   ::-webkit-scrollbar {
-    width: 6px;
+    display: none;
   }
-  ::-webkit-scrollbar-track {
-    background: hsl(0 0% 96%);
+  * {
+    scrollbar-width: none;
   }
-  ::-webkit-scrollbar-thumb {
-    background: hsl(220 10% 80%);
-    border-radius: 3px;
+
+  /* Safe area for notched phones */
+  #root {
+    min-height: 100dvh;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Prevent pull-to-refresh on mobile */
+  html {
+    overscroll-behavior: none;
+  }
+
+  /* Selection color */
+  ::selection {
+    background: hsl(340 82% 55% / 0.3);
+  }
+
+  /* Input zoom prevention on iOS */
+  input, select, textarea {
+    font-size: 16px !important;
   }
 }
