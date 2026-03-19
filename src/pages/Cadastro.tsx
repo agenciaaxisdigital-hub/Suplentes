@@ -1,0 +1,273 @@
+import { useState, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
+import { Save, Calculator } from "lucide-react";
+
+interface FormData {
+  nome: string;
+  regiao_atuacao: string;
+  telefone: string;
+  cargo_disputado: string;
+  ano_eleicao: number;
+  partido: string;
+  situacao: string;
+  total_votos: number;
+  expectativa_votos: number;
+  base_politica: string;
+  retirada_mensal_valor: number;
+  retirada_mensal_meses: number;
+  plotagem_qtd: number;
+  plotagem_valor_unit: number;
+  liderancas_qtd: number;
+  liderancas_valor_unit: number;
+  fiscais_qtd: number;
+  fiscais_valor_unit: number;
+}
+
+const defaultForm: FormData = {
+  nome: "",
+  regiao_atuacao: "",
+  telefone: "",
+  cargo_disputado: "Vereador",
+  ano_eleicao: 2024,
+  partido: "",
+  situacao: "Suplente",
+  total_votos: 0,
+  expectativa_votos: 0,
+  base_politica: "",
+  retirada_mensal_valor: 3000,
+  retirada_mensal_meses: 6,
+  plotagem_qtd: 50,
+  plotagem_valor_unit: 250,
+  liderancas_qtd: 20,
+  liderancas_valor_unit: 1622,
+  fiscais_qtd: 100,
+  fiscais_valor_unit: 110,
+};
+
+interface Props {
+  initial?: FormData & { id?: string };
+  onSaved?: () => void;
+}
+
+export default function Cadastro({ initial, onSaved }: Props) {
+  const [form, setForm] = useState<FormData>(initial || defaultForm);
+  const [saving, setSaving] = useState(false);
+
+  const set = (key: keyof FormData, value: string | number) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  const setNum = (key: keyof FormData, raw: string) => {
+    const v = parseFloat(raw);
+    set(key, isNaN(v) ? 0 : v);
+  };
+
+  const retiradaTotal = useMemo(() => form.retirada_mensal_valor * form.retirada_mensal_meses, [form.retirada_mensal_valor, form.retirada_mensal_meses]);
+  const plotagemTotal = useMemo(() => form.plotagem_qtd * form.plotagem_valor_unit, [form.plotagem_qtd, form.plotagem_valor_unit]);
+  const liderancasTotal = useMemo(() => form.liderancas_qtd * form.liderancas_valor_unit, [form.liderancas_qtd, form.liderancas_valor_unit]);
+  const fiscaisTotal = useMemo(() => form.fiscais_qtd * form.fiscais_valor_unit, [form.fiscais_qtd, form.fiscais_valor_unit]);
+  const totalCampanha = useMemo(() => retiradaTotal + plotagemTotal + liderancasTotal + fiscaisTotal, [retiradaTotal, plotagemTotal, liderancasTotal, fiscaisTotal]);
+
+  const totalPessoas = useMemo(() => form.liderancas_qtd + form.fiscais_qtd, [form.liderancas_qtd, form.fiscais_qtd]);
+
+  const handleSave = async () => {
+    if (!form.nome.trim()) {
+      toast({ title: "Nome obrigatório", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    const payload = { ...form, total_campanha: totalCampanha };
+
+    let error;
+    if (initial?.id) {
+      ({ error } = await supabase.from("suplentes").update(payload).eq("id", initial.id));
+    } else {
+      ({ error } = await supabase.from("suplentes").insert(payload));
+    }
+    setSaving(false);
+
+    if (error) {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: initial?.id ? "Atualizado!" : "Cadastrado com sucesso!" });
+      if (!initial?.id) setForm(defaultForm);
+      onSaved?.();
+    }
+  };
+
+  const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-2">
+        <h1 className="text-xl font-bold text-foreground">{initial?.id ? "Editar Ficha" : "Nova Ficha Política"}</h1>
+      </div>
+
+      {/* Dados pessoais */}
+      <section className="bg-card rounded-xl border border-border p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Dados do Candidato</h2>
+
+        <Field label="Nome" required>
+          <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Nome completo" className="bg-secondary" />
+        </Field>
+
+        <Field label="Região de Atuação">
+          <Input value={form.regiao_atuacao} onChange={(e) => set("regiao_atuacao", e.target.value)} placeholder="Ex: Garavelo" className="bg-secondary" />
+        </Field>
+
+        <Field label="Telefone">
+          <Input value={form.telefone} onChange={(e) => set("telefone", e.target.value)} placeholder="(62) 99999-9999" className="bg-secondary" />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Cargo">
+            <Select value={form.cargo_disputado} onValueChange={(v) => set("cargo_disputado", v)}>
+              <SelectTrigger className="bg-secondary"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Vereador">Vereador</SelectItem>
+                <SelectItem value="Deputado Estadual">Dep. Estadual</SelectItem>
+                <SelectItem value="Deputado Federal">Dep. Federal</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Ano Eleição">
+            <Input type="number" value={form.ano_eleicao} onChange={(e) => setNum("ano_eleicao", e.target.value)} className="bg-secondary" />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Partido">
+            <Input value={form.partido} onChange={(e) => set("partido", e.target.value)} className="bg-secondary" />
+          </Field>
+          <Field label="Situação">
+            <Select value={form.situacao} onValueChange={(v) => set("situacao", v)}>
+              <SelectTrigger className="bg-secondary"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Suplente">Suplente</SelectItem>
+                <SelectItem value="Eleito">Eleito</SelectItem>
+                <SelectItem value="Não Eleito">Não Eleito</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Votos Eleição Passada">
+            <Input type="number" value={form.total_votos} onChange={(e) => setNum("total_votos", e.target.value)} className="bg-secondary" />
+          </Field>
+          <Field label="Expectativa de Votos">
+            <Input type="number" value={form.expectativa_votos} onChange={(e) => setNum("expectativa_votos", e.target.value)} className="bg-secondary" />
+          </Field>
+        </div>
+
+        <Field label="Base Política">
+          <Textarea value={form.base_politica} onChange={(e) => set("base_politica", e.target.value)} placeholder="Associações, lideranças, comércios..." className="bg-secondary min-h-[60px]" />
+        </Field>
+      </section>
+
+      {/* Valores financeiros */}
+      <section className="bg-card rounded-xl border border-border p-4 space-y-4">
+        <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+          <Calculator size={16} /> Valores da Campanha
+        </h2>
+
+        <CalcRow
+          label="Retirada Mensal"
+          val1={form.retirada_mensal_valor} label1="Valor (R$)"
+          val2={form.retirada_mensal_meses} label2="Meses"
+          onChange1={(v) => setNum("retirada_mensal_valor", v)}
+          onChange2={(v) => setNum("retirada_mensal_meses", v)}
+          total={retiradaTotal}
+        />
+
+        <CalcRow
+          label="Plotagem"
+          val1={form.plotagem_qtd} label1="Qtd"
+          val2={form.plotagem_valor_unit} label2="Valor Unit. (R$)"
+          onChange1={(v) => setNum("plotagem_qtd", v)}
+          onChange2={(v) => setNum("plotagem_valor_unit", v)}
+          total={plotagemTotal}
+        />
+
+        <CalcRow
+          label="Lideranças na Campanha"
+          val1={form.liderancas_qtd} label1="Qtd"
+          val2={form.liderancas_valor_unit} label2="Valor Unit. (R$)"
+          onChange1={(v) => setNum("liderancas_qtd", v)}
+          onChange2={(v) => setNum("liderancas_valor_unit", v)}
+          total={liderancasTotal}
+        />
+
+        <CalcRow
+          label="Fiscais no Dia da Eleição"
+          val1={form.fiscais_qtd} label1="Qtd"
+          val2={form.fiscais_valor_unit} label2="Valor Unit. (R$)"
+          onChange1={(v) => setNum("fiscais_qtd", v)}
+          onChange2={(v) => setNum("fiscais_valor_unit", v)}
+          total={fiscaisTotal}
+        />
+
+        <div className="border-t border-border pt-3 space-y-2">
+          <div className="flex justify-between text-sm text-muted-foreground">
+            <span>Total Pessoas de Campo</span>
+            <span className="font-semibold text-foreground">{totalPessoas}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-base font-bold text-foreground">TOTAL CAMPANHA</span>
+            <span className="text-xl font-bold text-primary">{fmt(totalCampanha)}</span>
+          </div>
+        </div>
+      </section>
+
+      <Button
+        onClick={handleSave}
+        disabled={saving}
+        className="w-full bg-gradient-to-r from-primary to-pink-400 hover:opacity-90 text-primary-foreground font-semibold h-12 text-base"
+      >
+        <Save size={20} />
+        {saving ? "Salvando..." : initial?.id ? "Atualizar Ficha" : "Salvar Ficha"}
+      </Button>
+    </div>
+  );
+}
+
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+        {label} {required && <span className="text-primary">*</span>}
+      </Label>
+      {children}
+    </div>
+  );
+}
+
+function CalcRow({ label, val1, label1, val2, label2, onChange1, onChange2, total }: {
+  label: string; val1: number; label1: string; val2: number; label2: string;
+  onChange1: (v: string) => void; onChange2: (v: string) => void; total: number;
+}) {
+  const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  return (
+    <div className="bg-secondary/50 rounded-lg p-3 space-y-2">
+      <div className="flex justify-between items-center">
+        <span className="text-sm font-medium text-foreground">{label}</span>
+        <span className="text-sm font-bold text-primary">{fmt(total)}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label className="text-[10px] text-muted-foreground">{label1}</Label>
+          <Input type="number" value={val1} onChange={(e) => onChange1(e.target.value)} className="bg-card h-8 text-sm" />
+        </div>
+        <div>
+          <Label className="text-[10px] text-muted-foreground">{label2}</Label>
+          <Input type="number" value={val2} onChange={(e) => onChange2(e.target.value)} className="bg-card h-8 text-sm" />
+        </div>
+      </div>
+    </div>
+  );
+}
