@@ -120,7 +120,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
         </Field>
 
         <Field label="Telefone">
-          <Input value={form.telefone} onChange={(e) => set("telefone", e.target.value)} placeholder="(62) 99999-9999" className="bg-muted" />
+          <Input value={form.telefone} onChange={(e) => set("telefone", e.target.value)} placeholder="(62) 99999-9999" className="bg-card shadow-sm border-border" />
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
