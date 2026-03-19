@@ -1,5 +1,5 @@
 import { NavLink } from "@/components/NavLink";
-import { PlusCircle, List, BarChart3, LogOut } from "lucide-react";
+import { PlusCircle, List, BarChart3, LogOut, UserPlus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 export function BottomNav() {
