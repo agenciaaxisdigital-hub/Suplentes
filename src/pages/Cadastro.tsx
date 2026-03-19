@@ -28,6 +28,7 @@ interface FormData {
   liderancas_valor_unit: number;
   fiscais_qtd: number;
   fiscais_valor_unit: number;
+  assinatura: string;
 }
 
 const defaultForm: FormData = {
