@@ -13,10 +13,11 @@ const DOCTOR_PHOTO =
   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
 
 export default function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState(() => localStorage.getItem("saved_user") || "");
+  const [password, setPassword] = useState(() => localStorage.getItem("saved_pass") || "");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [remember, setRemember] = useState(() => !!localStorage.getItem("saved_user"));
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
