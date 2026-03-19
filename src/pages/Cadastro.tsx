@@ -50,6 +50,7 @@ const defaultForm: FormData = {
   liderancas_valor_unit: 0,
   fiscais_qtd: 0,
   fiscais_valor_unit: 0,
+  assinatura: "",
 };
 
 interface Props {
