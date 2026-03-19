@@ -221,7 +221,7 @@ function CalcRow({ label, val1, label1, val2, label2, onChange1, onChange2, tota
 }) {
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   return (
-    <div className="bg-muted rounded-xl p-3 space-y-2">
+    <div className="bg-muted/50 rounded-xl p-3 space-y-2 shadow-sm">
       <div className="flex justify-between items-center">
         <span className="text-sm font-medium text-foreground">{label}</span>
         <span className="text-sm font-bold text-primary">{fmt(total)}</span>
