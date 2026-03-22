@@ -18,6 +18,7 @@ interface CandidatoResult {
   situacao: string;
   municipio: string;
   ano: number;
+  totalVotos: number;
 }
 
 interface Props {
