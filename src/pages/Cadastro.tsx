@@ -126,8 +126,9 @@ export default function Cadastro({ initial, onSaved }: Props) {
                 cargo_disputado: c.cargo === "Vereador" ? "Vereador" : c.cargo === "Deputado Estadual" ? "Deputado Estadual" : c.cargo === "Deputado Federal" ? "Deputado Federal" : prev.cargo_disputado,
                 situacao: c.situacao.includes("Suplente") ? "Suplente" : c.situacao.includes("Eleito") ? "Eleito" : "Não Eleito",
                 regiao_atuacao: c.municipio,
+                total_votos: c.totalVotos > 0 ? c.totalVotos : prev.total_votos,
               }));
-              toast({ title: "Dados preenchidos!", description: `${c.nome} — ${c.partido}` });
+              toast({ title: "Dados preenchidos!", description: `${c.nome} — ${c.partido}${c.totalVotos > 0 ? ` — ${c.totalVotos.toLocaleString("pt-BR")} votos` : ""}` });
             }}
           />
         </section>
