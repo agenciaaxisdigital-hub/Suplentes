@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Search, Loader2, MapPin, ChevronDown, Check } from "lucide-react";
@@ -298,6 +299,32 @@ const getCidadeNames = (codes: string[]) => {
   return `${names[0]} +${names.length - 1}`;
 };
 
+const parseCsvLine = (line: string) => {
+  const values: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === '"') {
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (char === ';' && !inQuotes) {
+      values.push(current);
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  values.push(current);
+  return values;
+};
+
 export default function BuscaTSE({ onSelect }: Props) {
   const [nome, setNome] = useState("");
   const [ano, setAno] = useState("2024");
@@ -308,42 +335,55 @@ export default function BuscaTSE({ onSelect }: Props) {
   const [showResults, setShowResults] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
+  const votosCacheRef = useRef<Map<string, number>>(new Map());
 
-  // Fetch votes from TSE results API (client-side, since server gets 403)
   const fetchVotesForResults = useCallback(async (candidatos: CandidatoResult[]) => {
-    // Group by municipality to batch requests
-    const byMunicipio = new Map<string, CandidatoResult[]>();
-    for (const c of candidatos) {
-      const key = c.codigoMunicipio || "";
-      if (!key) continue;
-      if (!byMunicipio.has(key)) byMunicipio.set(key, []);
-      byMunicipio.get(key)!.push(c);
+    if (candidatos.length === 0) return candidatos;
+
+    const anoBusca = candidatos[0].ano;
+    if (anoBusca !== 2024) return candidatos;
+
+    try {
+      const zipUrl = "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2024.zip";
+      const response = await fetch(zipUrl);
+      if (!response.ok) return candidatos;
+
+      const zipBuffer = await response.arrayBuffer();
+      const zip = await JSZip.loadAsync(zipBuffer);
+      const file = zip.file("votacao_candidato_munzona_2024_GO.csv");
+      if (!file) return candidatos;
+
+      const csvText = await file.async("string");
+      const lines = csvText.split(/\r?\n/).filter(Boolean);
+      if (lines.length < 2) return candidatos;
+
+      const headers = parseCsvLine(lines[0]);
+      const idxMunicipio = headers.indexOf("CD_MUNICIPIO");
+      const idxCandidato = headers.indexOf("SQ_CANDIDATO");
+      const idxVotos = headers.indexOf("QT_VOTOS_NOMINAIS");
+
+      if (idxMunicipio === -1 || idxCandidato === -1 || idxVotos === -1) return candidatos;
+
+      const wanted = new Set(candidatos.map((c) => `${c.codigoMunicipio}:${c.id}`));
+      const totals = new Map<string, number>(votosCacheRef.current);
+
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCsvLine(lines[i]);
+        const key = `${cols[idxMunicipio]}:${cols[idxCandidato]}`;
+        if (!wanted.has(key)) continue;
+        const votos = parseInt(cols[idxVotos] || "0", 10) || 0;
+        totals.set(key, (totals.get(key) || 0) + votos);
+      }
+
+      votosCacheRef.current = totals;
+
+      return candidatos.map((c) => ({
+        ...c,
+        totalVotos: totals.get(`${c.codigoMunicipio}:${c.id}`) || 0,
+      }));
+    } catch {
+      return candidatos;
     }
-
-    const ELEICAO_MAP: Record<number, string> = { 2024: "619", 2020: "427" };
-
-    for (const [codMun, cands] of byMunicipio) {
-      const ano = cands[0].ano;
-      const eleicaoCode = ELEICAO_MAP[ano];
-      if (!eleicaoCode) continue;
-      try {
-        const url = `https://resultados.tse.jus.br/oficial/ele${ano}/${eleicaoCode}/dados-simplificados/go/go${codMun}-c0013-e000${eleicaoCode}-u.json`;
-        const resp = await fetch(url);
-        if (!resp.ok) continue;
-        const data = await resp.json();
-        const voteCands = data.cand || [];
-        for (const c of cands) {
-          const match = voteCands.find((vc: any) =>
-            vc.n === c.numero || vc.nm?.toUpperCase() === c.nomeUrna?.toUpperCase()
-          );
-          if (match) {
-            c.totalVotos = parseInt(match.vap) || parseInt(match.v) || 0;
-          }
-        }
-      } catch (_) { /* ignore - can't get votes */ }
-    }
-
-    return candidatos;
   }, []);
 
   const doSearch = useCallback(async (searchTerm: string, year: string, codes: string[]) => {
