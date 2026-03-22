@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { Save, Calculator, PenLine, Trash2 } from "lucide-react";
 import SignaturePad from "@/components/SignaturePad";
+import BuscaTSE from "@/components/BuscaTSE";
 
 interface FormData {
   nome: string;
@@ -110,6 +111,27 @@ export default function Cadastro({ initial, onSaved }: Props) {
       <div className="flex items-center gap-2">
         <h1 className="text-xl font-bold text-foreground">{initial?.id ? "Editar Ficha" : "Nova Ficha Política"}</h1>
       </div>
+
+      {/* Busca TSE */}
+      {!initial?.id && (
+        <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
+          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Buscar no TSE</h2>
+          <p className="text-xs text-muted-foreground">Busque pelo nome para preencher automaticamente os dados da última eleição.</p>
+          <BuscaTSE
+            onSelect={(c) => {
+              setForm((prev) => ({
+                ...prev,
+                nome: c.nome,
+                partido: c.partido,
+                cargo_disputado: c.cargo === "Vereador" ? "Vereador" : c.cargo === "Deputado Estadual" ? "Deputado Estadual" : c.cargo === "Deputado Federal" ? "Deputado Federal" : prev.cargo_disputado,
+                situacao: c.situacao.includes("Suplente") ? "Suplente" : c.situacao.includes("Eleito") ? "Eleito" : "Não Eleito",
+                regiao_atuacao: c.municipio,
+              }));
+              toast({ title: "Dados preenchidos!", description: `${c.nome} — ${c.partido}` });
+            }}
+          />
+        </section>
+      )}
 
       {/* Dados pessoais */}
       <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
