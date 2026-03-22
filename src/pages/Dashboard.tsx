@@ -60,7 +60,7 @@ export default function Dashboard() {
       <div className="relative">
         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Buscar candidato por nome ou região..."
+          placeholder="Buscar suplente por nome ou região..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-10 bg-card border-border"
@@ -128,9 +128,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Resumo por Candidato - Cards mobile-friendly */}
+      {/* Resumo por Suplente - Cards mobile-friendly */}
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Resumo por Candidato</h2>
+        <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Resumo por Suplente</h2>
 
         {visibleList.map((s: any) => {
           const liderancas = s.liderancas_qtd || 0;

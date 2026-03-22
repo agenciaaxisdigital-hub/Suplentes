@@ -113,7 +113,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
 
       {/* Dados pessoais */}
       <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
-        <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Dados do Candidato</h2>
+        <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Dados do Suplente</h2>
 
         <Field label="Nome" required>
           <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Nome completo" className="bg-card shadow-sm border-border" />
@@ -199,9 +199,9 @@ export default function Cadastro({ initial, onSaved }: Props) {
       {/* Assinatura */}
       <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
         <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-          <PenLine size={16} /> Assinatura do Candidato
+          <PenLine size={16} /> Assinatura do Suplente
         </h2>
-        <p className="text-xs text-muted-foreground">Opcional — clique para o candidato assinar na tela.</p>
+        <p className="text-xs text-muted-foreground">Opcional — clique para o suplente assinar na tela.</p>
 
         {form.assinatura ? (
           <div className="space-y-2">
