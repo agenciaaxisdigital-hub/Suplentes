@@ -266,6 +266,7 @@ interface CandidatoResult {
   id: number;
   nome: string;
   nomeUrna: string;
+  numero: number;
   partido: string;
   cargo: string;
   situacao: string;
