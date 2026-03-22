@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Search, Loader2, MapPin, ChevronDown, Check } from "lucide-react";
