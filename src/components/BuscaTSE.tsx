@@ -388,7 +388,7 @@ export default function BuscaTSE({ onSelect }: Props) {
       // Re-search if user has typed
       if (nome.trim().length >= 3) {
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => doSearch(nome, ano, next), 100);
+        debounceRef.current = setTimeout(() => doSearch(nome, ano, next), 50);
       }
       return next;
     });
