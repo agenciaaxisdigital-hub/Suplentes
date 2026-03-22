@@ -129,4 +129,13 @@
   input, select, textarea {
     font-size: 16px !important;
   }
+
+  /* PWA standalone mode improvements */
+  @media (display-mode: standalone) {
+    body {
+      overscroll-behavior-y: none;
+      -webkit-user-select: none;
+      user-select: text;
+    }
+  }
 }
