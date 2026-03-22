@@ -366,7 +366,7 @@ export default function BuscaTSE({ onSelect }: Props) {
     setNome(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (value.trim().length >= 3) {
-      debounceRef.current = setTimeout(() => doSearch(value, ano, selectedCodes), 100);
+      debounceRef.current = setTimeout(() => doSearch(value, ano, selectedCodes), 50);
     } else {
       setResults([]);
       setShowResults(false);
