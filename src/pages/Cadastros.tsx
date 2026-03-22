@@ -3,10 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown, Phone, Users, Eye, Car, UserCheck, Banknote } from "lucide-react";
+import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown, Phone, Users, Eye, Car, UserCheck, Banknote, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Cadastro from "./Cadastro";
 import { exportSuplentePDF } from "@/lib/exports";
+import { validateAllVotes } from "@/lib/validateVotes";
 
 export default function Cadastros() {
   const [search, setSearch] = useState("");
