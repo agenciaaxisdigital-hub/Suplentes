@@ -2,3 +2,6 @@ project_id = "hzhxrkurljrogxtzxmmb"
 
 [functions.create-user]
 verify_jwt = false
+
+[functions.buscar-candidato-tse]
+verify_jwt = false
