@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { Save, Calculator, PenLine, Trash2 } from "lucide-react";
 import SignaturePad from "@/components/SignaturePad";
+import BuscaTSE from "@/components/BuscaTSE";
 
 interface FormData {
   nome: string;
