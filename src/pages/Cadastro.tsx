@@ -118,7 +118,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
           <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Buscar no TSE</h2>
           <p className="text-xs text-muted-foreground">Busque pelo nome para preencher automaticamente os dados da última eleição.</p>
           <BuscaTSE
-            onSelect={(c) => {
+            onSelect={async (c) => {
               setForm((prev) => ({
                 ...prev,
                 nome: c.nome,
@@ -129,6 +129,23 @@ export default function Cadastro({ initial, onSaved }: Props) {
                 total_votos: c.totalVotos > 0 ? c.totalVotos : prev.total_votos,
               }));
               toast({ title: "Dados preenchidos!", description: `${c.nome} — ${c.partido}${c.totalVotos > 0 ? ` — ${c.totalVotos.toLocaleString("pt-BR")} votos` : ""}` });
+
+              // Auto-update existing DB records with similar name if votes differ
+              if (c.totalVotos > 0) {
+                try {
+                  const { data: existing } = await supabase
+                    .from("suplentes")
+                    .select("id, nome, total_votos")
+                    .ilike("nome", `%${c.nome.split(" ")[0]}%${c.nome.split(" ").slice(-1)[0]}%`);
+                  if (existing) {
+                    for (const rec of existing) {
+                      if ((rec.total_votos || 0) !== c.totalVotos) {
+                        await supabase.from("suplentes").update({ total_votos: c.totalVotos }).eq("id", rec.id);
+                      }
+                    }
+                  }
+                } catch { /* silently skip */ }
+              }
             }}
           />
         </section>
