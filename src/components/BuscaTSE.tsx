@@ -1,12 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2, MapPin, ChevronDown } from "lucide-react";
+import { Search, Loader2, MapPin, ChevronDown, Check } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface CandidatoResult {
   id: number;
@@ -23,8 +24,8 @@ interface Props {
   onSelect: (candidato: CandidatoResult) => void;
 }
 
-// Cidades principais no topo, depois todas as outras em ordem alfabética
-const CIDADES_POPULARES: { code: string; name: string }[] = [
+// Cidades com atalho rápido
+const CIDADES_RAPIDAS = [
   { code: "93734", name: "Goiânia" },
   { code: "92274", name: "Aparecida de Goiânia" },
   { code: "92215", name: "Anápolis" },
@@ -35,8 +36,10 @@ const CIDADES_POPULARES: { code: string; name: string }[] = [
   { code: "94870", name: "Nerópolis" },
 ];
 
+// Default: Goiânia + Aparecida
+const DEFAULT_CODES = ["93734", "92274"];
+
 const TODAS_CIDADES: { code: string; name: string }[] = [
-  { code: "", name: "Todo o Estado de Goiás" },
   { code: "93360", name: "Abadia de Goiás" },
   { code: "92010", name: "Abadiânia" },
   { code: "96458", name: "Acreúna" },
@@ -285,10 +288,17 @@ const TODAS_CIDADES: { code: string; name: string }[] = [
   { code: "93505", name: "Vila Propício" },
 ];
 
+const getCidadeNames = (codes: string[]) => {
+  if (codes.length === 0) return "Todo o Estado de Goiás";
+  const names = codes.map(c => TODAS_CIDADES.find(ci => ci.code === c)?.name || c);
+  if (names.length <= 2) return names.join(" e ");
+  return `${names[0]} +${names.length - 1}`;
+};
+
 export default function BuscaTSE({ onSelect }: Props) {
   const [nome, setNome] = useState("");
   const [ano, setAno] = useState("2024");
-  const [cidadeCode, setCidadeCode] = useState("93734"); // Goiânia default
+  const [selectedCodes, setSelectedCodes] = useState<string[]>(DEFAULT_CODES);
   const [cidadeOpen, setCidadeOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<CandidatoResult[]>([]);
@@ -296,9 +306,7 @@ export default function BuscaTSE({ onSelect }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const cidadeNome = TODAS_CIDADES.find(c => c.code === cidadeCode)?.name || "Todo o Estado";
-
-  const doSearch = useCallback(async (searchTerm: string, year: string, city: string) => {
+  const doSearch = useCallback(async (searchTerm: string, year: string, codes: string[]) => {
     if (searchTerm.trim().length < 3) {
       setResults([]);
       setShowResults(false);
@@ -308,8 +316,8 @@ export default function BuscaTSE({ onSelect }: Props) {
     setLoading(true);
     setShowResults(true);
     try {
-      const body: any = { nome: searchTerm.trim(), ano: parseInt(year) };
-      if (city) body.codigoMunicipio = city;
+      const body: Record<string, unknown> = { nome: searchTerm.trim(), ano: parseInt(year) };
+      if (codes.length > 0) body.codigosMunicipios = codes;
 
       const { data, error } = await supabase.functions.invoke("buscar-candidato-tse", { body });
       if (error) throw error;
@@ -326,7 +334,7 @@ export default function BuscaTSE({ onSelect }: Props) {
     setNome(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (value.trim().length >= 3) {
-      debounceRef.current = setTimeout(() => doSearch(value, ano, cidadeCode), 600);
+      debounceRef.current = setTimeout(() => doSearch(value, ano, selectedCodes), 600);
     } else {
       setResults([]);
       setShowResults(false);
@@ -340,12 +348,26 @@ export default function BuscaTSE({ onSelect }: Props) {
     setResults([]);
   };
 
-  const handleCidadeSelect = (code: string) => {
-    setCidadeCode(code);
+  const toggleCidade = (code: string) => {
+    setSelectedCodes(prev => {
+      const next = prev.includes(code)
+        ? prev.filter(c => c !== code)
+        : [...prev, code];
+      // Re-search if user has typed
+      if (nome.trim().length >= 3) {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => doSearch(nome, ano, next), 300);
+      }
+      return next;
+    });
+  };
+
+  const selectTodoEstado = () => {
+    setSelectedCodes([]);
     setCidadeOpen(false);
     if (nome.trim().length >= 3) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => doSearch(nome, ano, code), 300);
+      debounceRef.current = setTimeout(() => doSearch(nome, ano, []), 300);
     }
   };
 
@@ -373,29 +395,36 @@ export default function BuscaTSE({ onSelect }: Props) {
             >
               <span className="flex items-center gap-1.5 truncate">
                 <MapPin size={12} className="shrink-0 text-primary" />
-                <span className="truncate">{cidadeNome}</span>
+                <span className="truncate">{getCidadeNames(selectedCodes)}</span>
               </span>
               <ChevronDown size={12} className="shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[280px] p-0" align="start">
+          <PopoverContent className="w-[300px] p-0" align="start">
             <Command>
               <CommandInput placeholder="Buscar cidade..." />
               <CommandList>
                 <CommandEmpty>Cidade não encontrada.</CommandEmpty>
-                <CommandGroup heading="⭐ Principais">
-                  <CommandItem value="" onSelect={() => handleCidadeSelect("")}>
+                <CommandGroup heading="Ações">
+                  <CommandItem onSelect={selectTodoEstado}>
                     🗺️ Todo o Estado de Goiás
                   </CommandItem>
-                  {CIDADES_POPULARES.map((c) => (
-                    <CommandItem key={c.code} value={c.name} onSelect={() => handleCidadeSelect(c.code)}>
+                  <CommandItem onSelect={() => { setSelectedCodes(DEFAULT_CODES); }}>
+                    ⭐ Goiânia + Aparecida (padrão)
+                  </CommandItem>
+                </CommandGroup>
+                <CommandGroup heading="⭐ Principais">
+                  {CIDADES_RAPIDAS.map((c) => (
+                    <CommandItem key={`quick-${c.code}`} value={`quick-${c.name}`} onSelect={() => toggleCidade(c.code)}>
+                      <Check size={14} className={cn("mr-2 shrink-0", selectedCodes.includes(c.code) ? "opacity-100 text-primary" : "opacity-0")} />
                       {c.name}
                     </CommandItem>
                   ))}
                 </CommandGroup>
                 <CommandGroup heading="Todas as cidades">
-                  {TODAS_CIDADES.filter(c => c.code !== "").map((c) => (
-                    <CommandItem key={c.code} value={c.name} onSelect={() => handleCidadeSelect(c.code)}>
+                  {TODAS_CIDADES.map((c) => (
+                    <CommandItem key={c.code} value={c.name} onSelect={() => toggleCidade(c.code)}>
+                      <Check size={14} className={cn("mr-2 shrink-0", selectedCodes.includes(c.code) ? "opacity-100 text-primary" : "opacity-0")} />
                       {c.name}
                     </CommandItem>
                   ))}
@@ -405,7 +434,7 @@ export default function BuscaTSE({ onSelect }: Props) {
           </PopoverContent>
         </Popover>
 
-        <Select value={ano} onValueChange={(v) => { setAno(v); if (nome.trim().length >= 3) doSearch(nome, v, cidadeCode); }}>
+        <Select value={ano} onValueChange={(v) => { setAno(v); if (nome.trim().length >= 3) doSearch(nome, v, selectedCodes); }}>
           <SelectTrigger className="w-20 bg-card shadow-sm border-border h-9">
             <SelectValue />
           </SelectTrigger>
@@ -434,7 +463,9 @@ export default function BuscaTSE({ onSelect }: Props) {
       {loading && (
         <p className="text-xs text-muted-foreground flex items-center gap-1.5 px-1">
           <Loader2 size={12} className="animate-spin" />
-          {cidadeCode ? `Buscando em ${cidadeNome}...` : "Buscando em todos os 246 municípios de Goiás..."}
+          {selectedCodes.length > 0
+            ? `Buscando em ${getCidadeNames(selectedCodes)}...`
+            : "Buscando em todos os 246 municípios de Goiás..."}
         </p>
       )}
 
