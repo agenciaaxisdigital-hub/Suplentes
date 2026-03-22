@@ -13,10 +13,12 @@ interface CandidatoResult {
   id: number;
   nome: string;
   nomeUrna: string;
+  numero: number;
   partido: string;
   cargo: string;
   situacao: string;
   municipio: string;
+  codigoMunicipio?: string;
   ano: number;
   totalVotos: number;
 }
@@ -307,6 +309,43 @@ export default function BuscaTSE({ onSelect }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Fetch votes from TSE results API (client-side, since server gets 403)
+  const fetchVotesForResults = useCallback(async (candidatos: CandidatoResult[]) => {
+    // Group by municipality to batch requests
+    const byMunicipio = new Map<string, CandidatoResult[]>();
+    for (const c of candidatos) {
+      const key = c.codigoMunicipio || "";
+      if (!key) continue;
+      if (!byMunicipio.has(key)) byMunicipio.set(key, []);
+      byMunicipio.get(key)!.push(c);
+    }
+
+    const ELEICAO_MAP: Record<number, string> = { 2024: "619", 2020: "427" };
+
+    for (const [codMun, cands] of byMunicipio) {
+      const ano = cands[0].ano;
+      const eleicaoCode = ELEICAO_MAP[ano];
+      if (!eleicaoCode) continue;
+      try {
+        const url = `https://resultados.tse.jus.br/oficial/ele${ano}/${eleicaoCode}/dados-simplificados/go/go${codMun}-c0013-e000${eleicaoCode}-u.json`;
+        const resp = await fetch(url);
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        const voteCands = data.cand || [];
+        for (const c of cands) {
+          const match = voteCands.find((vc: any) =>
+            vc.n === c.numero || vc.nm?.toUpperCase() === c.nomeUrna?.toUpperCase()
+          );
+          if (match) {
+            c.totalVotos = parseInt(match.vap) || parseInt(match.v) || 0;
+          }
+        }
+      } catch (_) { /* ignore - can't get votes */ }
+    }
+
+    return candidatos;
+  }, []);
+
   const doSearch = useCallback(async (searchTerm: string, year: string, codes: string[]) => {
     if (searchTerm.trim().length < 3) {
       setResults([]);
@@ -322,14 +361,19 @@ export default function BuscaTSE({ onSelect }: Props) {
 
       const { data, error } = await supabase.functions.invoke("buscar-candidato-tse", { body });
       if (error) throw error;
-      setResults(data.resultados || []);
+      let resultados = data.resultados || [];
+      
+      // Fetch votes client-side
+      resultados = await fetchVotesForResults(resultados);
+      
+      setResults(resultados);
     } catch (e: any) {
       toast({ title: "Erro na busca", description: e.message, variant: "destructive" });
       setResults([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchVotesForResults]);
 
   const handleChange = (value: string) => {
     setNome(value);
