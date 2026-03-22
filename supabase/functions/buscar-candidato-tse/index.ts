@@ -260,7 +260,6 @@ const ELEICAO_IDS: Record<number, string> = {
   2020: "2030402020",
 };
 
-// Cargo: 13 = Vereador, 11 = Prefeito
 const CARGOS = [13];
 
 interface CandidatoResult {
@@ -281,7 +280,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { nome, ano = 2024 } = await req.json();
+    const { nome, ano = 2024, codigoMunicipio } = await req.json();
 
     if (!nome || nome.trim().length < 3) {
       return new Response(
@@ -300,11 +299,17 @@ Deno.serve(async (req) => {
       );
     }
 
+    // If a specific municipality code is provided, only search that one
+    let entries: [string, string][];
+    if (codigoMunicipio && MUNICIPIOS_GO[codigoMunicipio]) {
+      entries = [[codigoMunicipio, MUNICIPIOS_GO[codigoMunicipio]]];
+    } else {
+      entries = Object.entries(MUNICIPIOS_GO);
+    }
+
     const results: CandidatoResult[] = [];
     const errors: string[] = [];
 
-    // Query all municipalities in parallel (batches of 15)
-    const entries = Object.entries(MUNICIPIOS_GO);
     const batchSize = 15;
 
     for (let i = 0; i < entries.length; i += batchSize) {
@@ -345,7 +350,6 @@ Deno.serve(async (req) => {
       await Promise.all(promises);
     }
 
-    // Sort by name
     results.sort((a, b) => a.nome.localeCompare(b.nome));
 
     return new Response(

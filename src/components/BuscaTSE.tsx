@@ -1,9 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2, MapPin } from "lucide-react";
+import { Search, Loader2, MapPin, ChevronDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Button } from "@/components/ui/button";
 
 interface CandidatoResult {
   id: number;
@@ -20,16 +23,282 @@ interface Props {
   onSelect: (candidato: CandidatoResult) => void;
 }
 
+// Cidades principais no topo, depois todas as outras em ordem alfabética
+const CIDADES_POPULARES: { code: string; name: string }[] = [
+  { code: "93734", name: "Goiânia" },
+  { code: "92274", name: "Aparecida de Goiânia" },
+  { code: "92215", name: "Anápolis" },
+  { code: "92703", name: "Senador Canedo" },
+  { code: "96253", name: "Trindade" },
+  { code: "93890", name: "Hidrolândia" },
+  { code: "93750", name: "Goianira" },
+  { code: "94870", name: "Nerópolis" },
+];
+
+const TODAS_CIDADES: { code: string; name: string }[] = [
+  { code: "", name: "Todo o Estado de Goiás" },
+  { code: "93360", name: "Abadia de Goiás" },
+  { code: "92010", name: "Abadiânia" },
+  { code: "96458", name: "Acreúna" },
+  { code: "96911", name: "Adelândia" },
+  { code: "92053", name: "Alexânia" },
+  { code: "92096", name: "Aloândia" },
+  { code: "92940", name: "Alto Horizonte" },
+  { code: "92118", name: "Alto Paraíso de Goiás" },
+  { code: "92150", name: "Alvorada do Norte" },
+  { code: "93386", name: "Amaralina" },
+  { code: "96610", name: "Americano do Brasil" },
+  { code: "92177", name: "Amorinópolis" },
+  { code: "92231", name: "Anhangüera" },
+  { code: "92258", name: "Anicuns" },
+  { code: "92215", name: "Anápolis" },
+  { code: "92274", name: "Aparecida de Goiânia" },
+  { code: "93009", name: "Aparecida do Rio Doce" },
+  { code: "92290", name: "Aporé" },
+  { code: "92339", name: "Aragarças" },
+  { code: "92355", name: "Aragoiânia" },
+  { code: "96695", name: "Araguapaz" },
+  { code: "92312", name: "Araçu" },
+  { code: "96717", name: "Arenópolis" },
+  { code: "92495", name: "Aruanã" },
+  { code: "92517", name: "Aurilândia" },
+  { code: "92550", name: "Avelinópolis" },
+  { code: "96938", name: "Água Fria de Goiás" },
+  { code: "92037", name: "Água Limpa" },
+  { code: "93343", name: "Águas Lindas de Goiás" },
+  { code: "92614", name: "Baliza" },
+  { code: "92630", name: "Barro Alto" },
+  { code: "92657", name: "Bela Vista de Goiás" },
+  { code: "92673", name: "Bom Jardim de Goiás" },
+  { code: "92690", name: "Bom Jesus" },
+  { code: "92029", name: "Bonfinópolis" },
+  { code: "93408", name: "Bonópolis" },
+  { code: "92711", name: "Brazabrantes" },
+  { code: "92754", name: "Britânia" },
+  { code: "92770", name: "Buriti Alegre" },
+  { code: "93106", name: "Buriti de Goiás" },
+  { code: "93262", name: "Buritinópolis" },
+  { code: "92797", name: "Cabeceiras" },
+  { code: "92819", name: "Cachoeira Alta" },
+  { code: "92835", name: "Cachoeira de Goiás" },
+  { code: "96733", name: "Cachoeira Dourada" },
+  { code: "92878", name: "Caiapônia" },
+  { code: "92894", name: "Caldas Novas" },
+  { code: "93122", name: "Caldazinha" },
+  { code: "92916", name: "Campestre de Goiás" },
+  { code: "96873", name: "Campinaçu" },
+  { code: "92932", name: "Campinorte" },
+  { code: "92959", name: "Campo Alegre de Goiás" },
+  { code: "93580", name: "Campo Limpo de Goiás" },
+  { code: "92975", name: "Campos Belos" },
+  { code: "92061", name: "Campos Verdes" },
+  { code: "92991", name: "Carmo do Rio Verde" },
+  { code: "92967", name: "Castelândia" },
+  { code: "93017", name: "Catalão" },
+  { code: "93033", name: "Caturaí" },
+  { code: "93050", name: "Cavalcante" },
+  { code: "92851", name: "Caçu" },
+  { code: "93076", name: "Ceres" },
+  { code: "92100", name: "Cezarina" },
+  { code: "92924", name: "Chapadão do Céu" },
+  { code: "93025", name: "Cidade Ocidental" },
+  { code: "92886", name: "Cocalzinho de Goiás" },
+  { code: "92126", name: "Colinas do Sul" },
+  { code: "93190", name: "Corumbaíba" },
+  { code: "93173", name: "Corumbá de Goiás" },
+  { code: "93254", name: "Cristalina" },
+  { code: "93270", name: "Cristianópolis" },
+  { code: "93297", name: "Crixás" },
+  { code: "93319", name: "Cromínia" },
+  { code: "93335", name: "Cumari" },
+  { code: "93157", name: "Córrego do Ouro" },
+  { code: "93351", name: "Damianópolis" },
+  { code: "93378", name: "Damolândia" },
+  { code: "93394", name: "Davinópolis" },
+  { code: "93432", name: "Diorama" },
+  { code: "93092", name: "Divinópolis de Goiás" },
+  { code: "96750", name: "Doverlândia" },
+  { code: "92207", name: "Edealina" },
+  { code: "93491", name: "Edéia" },
+  { code: "93513", name: "Estrela do Norte" },
+  { code: "92223", name: "Faina" },
+  { code: "93530", name: "Fazenda Nova" },
+  { code: "93572", name: "Firminópolis" },
+  { code: "93599", name: "Flores de Goiás" },
+  { code: "93610", name: "Formosa" },
+  { code: "93637", name: "Formoso" },
+  { code: "93564", name: "Gameleira de Goiás" },
+  { code: "93696", name: "Goiandira" },
+  { code: "93750", name: "Goianira" },
+  { code: "93670", name: "Goianápolis" },
+  { code: "93718", name: "Goianésia" },
+  { code: "93793", name: "Goiatuba" },
+  { code: "93777", name: "Goiás" },
+  { code: "93734", name: "Goiânia" },
+  { code: "92266", name: "Gouvelândia" },
+  { code: "93815", name: "Guapó" },
+  { code: "93831", name: "Guarani de Goiás" },
+  { code: "93149", name: "Guaraíta" },
+  { code: "92860", name: "Guarinos" },
+  { code: "93874", name: "Heitoraí" },
+  { code: "93912", name: "Hidrolina" },
+  { code: "93890", name: "Hidrolândia" },
+  { code: "93939", name: "Iaciara" },
+  { code: "93165", name: "Inaciolândia" },
+  { code: "96814", name: "Indiara" },
+  { code: "93955", name: "Inhumas" },
+  { code: "93971", name: "Ipameri" },
+  { code: "93548", name: "Ipiranga de Goiás" },
+  { code: "93998", name: "Iporá" },
+  { code: "94013", name: "Israelândia" },
+  { code: "94030", name: "Itaberaí" },
+  { code: "92282", name: "Itaguari" },
+  { code: "94072", name: "Itaguaru" },
+  { code: "94110", name: "Itajá" },
+  { code: "94137", name: "Itapaci" },
+  { code: "94153", name: "Itapirapuã" },
+  { code: "94196", name: "Itapuranga" },
+  { code: "94218", name: "Itarumã" },
+  { code: "94234", name: "Itauçu" },
+  { code: "94250", name: "Itumbiara" },
+  { code: "94277", name: "Ivolândia" },
+  { code: "94293", name: "Jandaia" },
+  { code: "94315", name: "Jaraguá" },
+  { code: "94331", name: "Jataí" },
+  { code: "94358", name: "Jaupaci" },
+  { code: "92983", name: "Jesúpolis" },
+  { code: "94374", name: "Joviânia" },
+  { code: "94390", name: "Jussara" },
+  { code: "93602", name: "Lagoa Santa" },
+  { code: "94439", name: "Leopoldo de Bulhões" },
+  { code: "94455", name: "Luziânia" },
+  { code: "94471", name: "Mairipotaba" },
+  { code: "94498", name: "Mambaí" },
+  { code: "94510", name: "Mara Rosa" },
+  { code: "94536", name: "Marzagão" },
+  { code: "92320", name: "Matrinchã" },
+  { code: "94579", name: "Maurilândia" },
+  { code: "92347", name: "Mimoso de Goiás" },
+  { code: "96474", name: "Minaçu" },
+  { code: "94595", name: "Mineiros" },
+  { code: "94650", name: "Moiporá" },
+  { code: "94676", name: "Monte Alegre de Goiás" },
+  { code: "94714", name: "Montes Claros de Goiás" },
+  { code: "92363", name: "Montividiu" },
+  { code: "93181", name: "Montividiu do Norte" },
+  { code: "94730", name: "Morrinhos" },
+  { code: "92169", name: "Morro Agudo de Goiás" },
+  { code: "94757", name: "Mossâmedes" },
+  { code: "94773", name: "Mozarlândia" },
+  { code: "96512", name: "Mundo Novo" },
+  { code: "94790", name: "Mutunópolis" },
+  { code: "94854", name: "Nazário" },
+  { code: "94870", name: "Nerópolis" },
+  { code: "94897", name: "Niquelândia" },
+  { code: "94919", name: "Nova América" },
+  { code: "94935", name: "Nova Aurora" },
+  { code: "96539", name: "Nova Crixás" },
+  { code: "96555", name: "Nova Glória" },
+  { code: "93084", name: "Nova Iguaçu de Goiás" },
+  { code: "94951", name: "Nova Roma" },
+  { code: "94978", name: "Nova Veneza" },
+  { code: "95010", name: "Novo Brasil" },
+  { code: "93327", name: "Novo Gama" },
+  { code: "92444", name: "Novo Planalto" },
+  { code: "95036", name: "Orizona" },
+  { code: "95052", name: "Ouro Verde de Goiás" },
+  { code: "95079", name: "Ouvidor" },
+  { code: "95095", name: "Padre Bernardo" },
+  { code: "92460", name: "Palestina de Goiás" },
+  { code: "95117", name: "Palmeiras de Goiás" },
+  { code: "95133", name: "Palmelo" },
+  { code: "95150", name: "Palminópolis" },
+  { code: "95176", name: "Panamá" },
+  { code: "94552", name: "Paranaiguara" },
+  { code: "95230", name: "Paraúna" },
+  { code: "93068", name: "Perolândia" },
+  { code: "95311", name: "Petrolina de Goiás" },
+  { code: "95354", name: "Pilar de Goiás" },
+  { code: "95397", name: "Piracanjuba" },
+  { code: "95419", name: "Piranhas" },
+  { code: "95435", name: "Pirenópolis" },
+  { code: "95451", name: "Pires do Rio" },
+  { code: "95958", name: "Planaltina" },
+  { code: "95494", name: "Pontalina" },
+  { code: "95559", name: "Porangatu" },
+  { code: "93424", name: "Porteirão" },
+  { code: "95575", name: "Portelândia" },
+  { code: "95613", name: "Posse" },
+  { code: "93041", name: "Professor Jamil" },
+  { code: "95630", name: "Quirinópolis" },
+  { code: "95656", name: "Rialma" },
+  { code: "95672", name: "Rianápolis" },
+  { code: "92827", name: "Rio Quente" },
+  { code: "95710", name: "Rio Verde" },
+  { code: "95737", name: "Rubiataba" },
+  { code: "95753", name: "Sanclerlândia" },
+  { code: "95770", name: "Santa Bárbara de Goiás" },
+  { code: "95796", name: "Santa Cruz de Goiás" },
+  { code: "92568", name: "Santa Fé de Goiás" },
+  { code: "95818", name: "Santa Helena de Goiás" },
+  { code: "96890", name: "Santa Isabel" },
+  { code: "95834", name: "Santa Rita do Araguaia" },
+  { code: "93440", name: "Santa Rita do Novo Destino" },
+  { code: "95850", name: "Santa Rosa de Goiás" },
+  { code: "95877", name: "Santa Tereza de Goiás" },
+  { code: "95893", name: "Santa Terezinha de Goiás" },
+  { code: "93203", name: "Santo Antônio da Barra" },
+  { code: "92908", name: "Santo Antônio de Goiás" },
+  { code: "96776", name: "Santo Antônio do Descoberto" },
+  { code: "92703", name: "Senador Canedo" },
+  { code: "96075", name: "Serranópolis" },
+  { code: "96091", name: "Silvânia" },
+  { code: "92720", name: "Simolândia" },
+  { code: "95915", name: "São Domingos" },
+  { code: "95931", name: "São Francisco de Goiás" },
+  { code: "95974", name: "São João d'Aliança" },
+  { code: "92622", name: "São João da Paraúna" },
+  { code: "92649", name: "São Luiz do Norte" },
+  { code: "95990", name: "São Luís de Montes Belos" },
+  { code: "96016", name: "São Miguel do Araguaia" },
+  { code: "92665", name: "São Miguel do Passa Quatro" },
+  { code: "93483", name: "São Patrício" },
+  { code: "96059", name: "São Simão" },
+  { code: "96113", name: "Sítio d'Abadia" },
+  { code: "96172", name: "Taquaral de Goiás" },
+  { code: "92762", name: "Teresina de Goiás" },
+  { code: "93220", name: "Terezópolis de Goiás" },
+  { code: "96253", name: "Trindade" },
+  { code: "92789", name: "Trombas" },
+  { code: "96237", name: "Três Ranchos" },
+  { code: "92800", name: "Turvelândia" },
+  { code: "96318", name: "Turvânia" },
+  { code: "93246", name: "Uirapuru" },
+  { code: "96350", name: "Uruana" },
+  { code: "96334", name: "Uruaçu" },
+  { code: "96377", name: "Urutaí" },
+  { code: "93300", name: "Valparaíso de Goiás" },
+  { code: "96393", name: "Varjão" },
+  { code: "96415", name: "Vianópolis" },
+  { code: "96571", name: "Vicentinópolis" },
+  { code: "93289", name: "Vila Boa" },
+  { code: "93505", name: "Vila Propício" },
+];
+
 export default function BuscaTSE({ onSelect }: Props) {
   const [nome, setNome] = useState("");
   const [ano, setAno] = useState("2024");
+  const [cidadeCode, setCidadeCode] = useState("93734"); // Goiânia default
+  const [cidadeOpen, setCidadeOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<CandidatoResult[]>([]);
   const [showResults, setShowResults] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const doSearch = useCallback(async (searchTerm: string, year: string) => {
+  const cidadeNome = TODAS_CIDADES.find(c => c.code === cidadeCode)?.name || "Todo o Estado";
+
+  const doSearch = useCallback(async (searchTerm: string, year: string, city: string) => {
     if (searchTerm.trim().length < 3) {
       setResults([]);
       setShowResults(false);
@@ -39,9 +308,10 @@ export default function BuscaTSE({ onSelect }: Props) {
     setLoading(true);
     setShowResults(true);
     try {
-      const { data, error } = await supabase.functions.invoke("buscar-candidato-tse", {
-        body: { nome: searchTerm.trim(), ano: parseInt(year) },
-      });
+      const body: any = { nome: searchTerm.trim(), ano: parseInt(year) };
+      if (city) body.codigoMunicipio = city;
+
+      const { data, error } = await supabase.functions.invoke("buscar-candidato-tse", { body });
       if (error) throw error;
       setResults(data.resultados || []);
     } catch (e: any) {
@@ -56,7 +326,7 @@ export default function BuscaTSE({ onSelect }: Props) {
     setNome(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (value.trim().length >= 3) {
-      debounceRef.current = setTimeout(() => doSearch(value, ano), 600);
+      debounceRef.current = setTimeout(() => doSearch(value, ano, cidadeCode), 600);
     } else {
       setResults([]);
       setShowResults(false);
@@ -70,7 +340,15 @@ export default function BuscaTSE({ onSelect }: Props) {
     setResults([]);
   };
 
-  // Close dropdown on outside click
+  const handleCidadeSelect = (code: string) => {
+    setCidadeCode(code);
+    setCidadeOpen(false);
+    if (nome.trim().length >= 3) {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => doSearch(nome, ano, code), 300);
+    }
+  };
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -83,22 +361,52 @@ export default function BuscaTSE({ onSelect }: Props) {
 
   return (
     <div ref={containerRef} className="relative space-y-2">
+      {/* City selector + Year */}
       <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Digite o nome completo ou de campanha..."
-            value={nome}
-            onChange={(e) => handleChange(e.target.value)}
-            onFocus={() => results.length > 0 && setShowResults(true)}
-            className="bg-card shadow-sm border-border pl-9"
-          />
-          {loading && (
-            <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" />
-          )}
-        </div>
-        <Select value={ano} onValueChange={(v) => { setAno(v); if (nome.trim().length >= 3) doSearch(nome, v); }}>
-          <SelectTrigger className="w-20 bg-card shadow-sm border-border">
+        <Popover open={cidadeOpen} onOpenChange={setCidadeOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={cidadeOpen}
+              className="flex-1 justify-between bg-card shadow-sm border-border text-sm font-normal h-9 truncate"
+            >
+              <span className="flex items-center gap-1.5 truncate">
+                <MapPin size={12} className="shrink-0 text-primary" />
+                <span className="truncate">{cidadeNome}</span>
+              </span>
+              <ChevronDown size={12} className="shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[280px] p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Buscar cidade..." />
+              <CommandList>
+                <CommandEmpty>Cidade não encontrada.</CommandEmpty>
+                <CommandGroup heading="⭐ Principais">
+                  <CommandItem value="" onSelect={() => handleCidadeSelect("")}>
+                    🗺️ Todo o Estado de Goiás
+                  </CommandItem>
+                  {CIDADES_POPULARES.map((c) => (
+                    <CommandItem key={c.code} value={c.name} onSelect={() => handleCidadeSelect(c.code)}>
+                      {c.name}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+                <CommandGroup heading="Todas as cidades">
+                  {TODAS_CIDADES.filter(c => c.code !== "").map((c) => (
+                    <CommandItem key={c.code} value={c.name} onSelect={() => handleCidadeSelect(c.code)}>
+                      {c.name}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+
+        <Select value={ano} onValueChange={(v) => { setAno(v); if (nome.trim().length >= 3) doSearch(nome, v, cidadeCode); }}>
+          <SelectTrigger className="w-20 bg-card shadow-sm border-border h-9">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -108,21 +416,36 @@ export default function BuscaTSE({ onSelect }: Props) {
         </Select>
       </div>
 
+      {/* Search input */}
+      <div className="relative">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Digite nome completo ou de campanha..."
+          value={nome}
+          onChange={(e) => handleChange(e.target.value)}
+          onFocus={() => results.length > 0 && setShowResults(true)}
+          className="bg-card shadow-sm border-border pl-9"
+        />
+        {loading && (
+          <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" />
+        )}
+      </div>
+
       {loading && (
         <p className="text-xs text-muted-foreground flex items-center gap-1.5 px-1">
           <Loader2 size={12} className="animate-spin" />
-          Buscando em todos os 246 municípios de Goiás...
+          {cidadeCode ? `Buscando em ${cidadeNome}...` : "Buscando em todos os 246 municípios de Goiás..."}
         </p>
       )}
 
       {showResults && !loading && results.length === 0 && nome.trim().length >= 3 && (
-        <p className="text-xs text-muted-foreground px-1">Nenhum resultado encontrado. Tente outro nome ou ano.</p>
+        <p className="text-xs text-muted-foreground px-1">Nenhum resultado. Tente outro nome, cidade ou ano.</p>
       )}
 
       {showResults && results.length > 0 && (
         <div className="absolute z-50 left-0 right-0 top-full mt-1 max-h-64 overflow-y-auto rounded-xl border border-border bg-popover shadow-lg">
           <div className="px-3 py-1.5 border-b border-border">
-            <p className="text-[11px] text-muted-foreground">{results.length} resultado(s) — nome completo ou de urna</p>
+            <p className="text-[11px] text-muted-foreground">{results.length} resultado(s)</p>
           </div>
           {results.map((c) => (
             <button
