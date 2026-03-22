@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,13 +6,52 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, LogIn, Lock, User } from "lucide-react";
-import NetworkBackground from "@/components/NetworkBackground";
+import Hyperspeed from "@/components/Hyperspeed";
 import { toast } from "@/hooks/use-toast";
 
 const EMAIL_DOMAIN = "@painel.sarelli.com";
 
 const DOCTOR_PHOTO =
   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
+
+// Pink/rose themed Hyperspeed preset
+const hyperspeedPreset = {
+  onSpeedUp: () => {},
+  onSlowDown: () => {},
+  distortion: 'turbulentDistortion',
+  length: 400,
+  roadWidth: 10,
+  islandWidth: 2,
+  lanesPerRoad: 3,
+  fov: 90,
+  fovSpeedUp: 150,
+  speedUp: 2,
+  carLightsFade: 0.4,
+  totalSideLightSticks: 20,
+  lightPairsPerRoadWay: 40,
+  shoulderLinesWidthPercentage: 0.05,
+  brokenLinesWidthPercentage: 0.1,
+  brokenLinesLengthPercentage: 0.5,
+  lightStickWidth: [0.12, 0.5],
+  lightStickHeight: [1.3, 1.7],
+  movingAwaySpeed: [60, 80],
+  movingCloserSpeed: [-120, -160],
+  carLightsLength: [400 * 0.03, 400 * 0.2],
+  carLightsRadius: [0.05, 0.14],
+  carWidthPercentage: [0.3, 0.5],
+  carShiftX: [-0.8, 0.8],
+  carFloorSeparation: [0, 5],
+  colors: {
+    roadColor: 0x080808,
+    islandColor: 0x0a0a0a,
+    background: 0x000000,
+    shoulderLines: 0x1a0a12,
+    brokenLines: 0x1a0a12,
+    leftCars: [0xec4899, 0xf472b6, 0xdb2777],
+    rightCars: [0xfb7185, 0xf43f5e, 0xe11d48],
+    sticks: 0xec4899,
+  }
+};
 
 export default function Login() {
   const [username, setUsername] = useState(() => localStorage.getItem("saved_user") || "");
@@ -21,6 +60,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [remember, setRemember] = useState(() => !!localStorage.getItem("saved_user"));
   const navigate = useNavigate();
+
+  // Memoize to prevent re-renders
+  const preset = useMemo(() => hyperspeedPreset, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,9 +94,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[hsl(240,10%,6%)] flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated network background */}
-      <NetworkBackground />
+    <div className="min-h-[100dvh] bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Hyperspeed background */}
+      <Hyperspeed effectOptions={preset} />
+
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-black/40 z-[1]" />
 
       <div className="w-full max-w-sm space-y-6 relative z-10">
         {/* Photo + Identity */}
@@ -62,7 +107,7 @@ export default function Login() {
           <div className="relative mx-auto w-28 h-28">
             {/* Pink ring */}
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-pink-500 to-rose-400 p-[3px]">
-              <div className="w-full h-full rounded-full overflow-hidden bg-[hsl(240,10%,6%)]">
+              <div className="w-full h-full rounded-full overflow-hidden bg-black">
                 <img
                   src={DOCTOR_PHOTO}
                   alt="Dra. Fernanda Sarelli"
@@ -73,7 +118,7 @@ export default function Login() {
               </div>
             </div>
             {/* Online indicator */}
-            <div className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-[hsl(240,10%,6%)]" />
+            <div className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-black" />
           </div>
 
           <div>
@@ -93,7 +138,7 @@ export default function Login() {
         {/* Login form */}
         <form
           onSubmit={handleLogin}
-          className="space-y-4 bg-white/[0.04] backdrop-blur-xl p-6 rounded-2xl border border-white/[0.08] shadow-[0_8px_32px_hsl(340_82%_55%/0.08)]"
+          className="space-y-4 bg-black/60 backdrop-blur-xl p-6 rounded-2xl border border-white/[0.08] shadow-[0_8px_32px_hsl(340_82%_55%/0.15)]"
         >
           <div className="space-y-1.5">
             <Label className="text-[11px] uppercase tracking-widest text-white/50 font-medium">
