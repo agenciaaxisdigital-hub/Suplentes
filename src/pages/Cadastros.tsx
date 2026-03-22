@@ -12,6 +12,8 @@ import { validateAllVotes } from "@/lib/validateVotes";
 export default function Cadastros() {
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [validating, setValidating] = useState(false);
+  const [validationProgress, setValidationProgress] = useState("");
 
   const { data: suplentes, refetch } = useQuery({
     queryKey: ["suplentes"],
