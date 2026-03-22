@@ -99,7 +99,7 @@ export default function Login() {
       <Hyperspeed effectOptions={preset} />
 
       {/* Dark overlay for readability */}
-      <div className="absolute inset-0 bg-black/30 z-[1]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0d0610]/60 via-transparent to-[#0d0610]/40 z-[1]" />
 
       <div className="w-full max-w-sm space-y-6 relative z-10">
         {/* Photo + Identity */}
