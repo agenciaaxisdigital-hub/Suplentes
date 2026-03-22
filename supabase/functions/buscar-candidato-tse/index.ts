@@ -272,6 +272,7 @@ interface CandidatoResult {
   municipio: string;
   codigoMunicipio: string;
   ano: number;
+  totalVotos: number;
 }
 
 Deno.serve(async (req) => {
