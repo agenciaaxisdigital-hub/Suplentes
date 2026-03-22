@@ -615,7 +615,9 @@ const Hyperspeed = ({ effectOptions = DEFAULT_EFFECT_OPTIONS }: { effectOptions?
         const options = this.options;
         const curve = new THREE.LineCurve3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1));
         const geometry = new THREE.TubeGeometry(curve, 40, 1, 8, false);
-        const instanced = new THREE.InstancedBufferGeometry().copy(geometry);
+        const instanced = new THREE.InstancedBufferGeometry();
+        instanced.index = geometry.index;
+        instanced.attributes = geometry.attributes;
         instanced.instanceCount = options.lightPairsPerRoadWay * 2;
 
         const laneWidth = options.roadWidth / options.lanesPerRoad;
