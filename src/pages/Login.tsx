@@ -94,12 +94,28 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-[#0a0010] via-[#120818] to-[#0d0408] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Ambient glow effects */}
+      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-pink-500/[0.04] blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-rose-500/[0.05] blur-[100px] pointer-events-none" />
+      <div className="absolute top-[40%] left-[50%] -translate-x-1/2 w-[30%] h-[30%] rounded-full bg-fuchsia-500/[0.03] blur-[80px] pointer-events-none" />
+
+      {/* Subtle branding watermarks */}
+      <div className="absolute top-8 left-8 text-white/[0.03] text-7xl font-black tracking-tighter select-none pointer-events-none z-0 leading-none">
+        SARELLI
+      </div>
+      <div className="absolute bottom-12 right-8 text-white/[0.03] text-5xl font-black tracking-tighter select-none pointer-events-none z-0 leading-none text-right">
+        DRA.<br />FERNANDA
+      </div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/[0.015] text-[12rem] font-black tracking-tighter select-none pointer-events-none z-0">
+        FS
+      </div>
+
       {/* Hyperspeed background */}
       <Hyperspeed effectOptions={preset} />
 
       {/* Dark overlay for readability */}
-      <div className="absolute inset-0 bg-black/40 z-[1]" />
+      <div className="absolute inset-0 bg-black/30 z-[1]" />
 
       <div className="w-full max-w-sm space-y-6 relative z-10">
         {/* Photo + Identity */}
