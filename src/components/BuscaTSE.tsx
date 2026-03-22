@@ -334,51 +334,25 @@ export default function BuscaTSE({ onSelect }: Props) {
   const [showResults, setShowResults] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
-  const votosCacheRef = useRef<Map<string, number>>(new Map());
+  const votosCacheRef = useRef<Record<string, number> | null>(null);
 
   const fetchVotesForResults = useCallback(async (candidatos: CandidatoResult[]) => {
     if (candidatos.length === 0) return candidatos;
-
-    const anoBusca = candidatos[0].ano;
-    if (anoBusca !== 2024) return candidatos;
+    if (candidatos[0].ano !== 2024) return candidatos;
 
     try {
-      const zipUrl = "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2024.zip";
-      const response = await fetch(zipUrl);
-      if (!response.ok) return candidatos;
-
-      const zipBuffer = await response.arrayBuffer();
-      const zip = await JSZip.loadAsync(zipBuffer);
-      const file = zip.file("votacao_candidato_munzona_2024_GO.csv");
-      if (!file) return candidatos;
-
-      const csvText = await file.async("string");
-      const lines = csvText.split(/\r?\n/).filter(Boolean);
-      if (lines.length < 2) return candidatos;
-
-      const headers = parseCsvLine(lines[0]);
-      const idxMunicipio = headers.indexOf("CD_MUNICIPIO");
-      const idxCandidato = headers.indexOf("SQ_CANDIDATO");
-      const idxVotos = headers.indexOf("QT_VOTOS_NOMINAIS");
-
-      if (idxMunicipio === -1 || idxCandidato === -1 || idxVotos === -1) return candidatos;
-
-      const wanted = new Set(candidatos.map((c) => `${c.codigoMunicipio}:${c.id}`));
-      const totals = new Map<string, number>(votosCacheRef.current);
-
-      for (let i = 1; i < lines.length; i++) {
-        const cols = parseCsvLine(lines[i]);
-        const key = `${cols[idxMunicipio]}:${cols[idxCandidato]}`;
-        if (!wanted.has(key)) continue;
-        const votos = parseInt(cols[idxVotos] || "0", 10) || 0;
-        totals.set(key, (totals.get(key) || 0) + votos);
+      if (!votosCacheRef.current) {
+        const response = await fetch("/tse-votos-go-2024.json", { cache: "force-cache" });
+        if (!response.ok) return candidatos;
+        votosCacheRef.current = await response.json();
       }
 
-      votosCacheRef.current = totals;
+      const votosMap = votosCacheRef.current;
+      if (!votosMap) return candidatos;
 
       return candidatos.map((c) => ({
         ...c,
-        totalVotos: totals.get(`${c.codigoMunicipio}:${c.id}`) || 0,
+        totalVotos: votosMap[`${c.codigoMunicipio}:${c.id}`] || 0,
       }));
     } catch {
       return candidatos;
