@@ -18,6 +18,7 @@ interface CandidatoResult {
   situacao: string;
   municipio: string;
   ano: number;
+  totalVotos: number;
 }
 
 interface Props {
@@ -496,6 +497,9 @@ export default function BuscaTSE({ onSelect }: Props) {
                     <span className="flex items-center gap-0.5 text-[11px] text-muted-foreground">
                       <MapPin size={9} /> {c.municipio}
                     </span>
+                    {c.totalVotos > 0 && (
+                      <span className="text-[11px] font-semibold text-foreground">🗳️ {c.totalVotos.toLocaleString("pt-BR")} votos</span>
+                    )}
                   </div>
                 </div>
                 <span className="text-[10px] font-medium uppercase tracking-wider text-primary whitespace-nowrap mt-0.5">

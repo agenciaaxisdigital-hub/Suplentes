@@ -272,6 +272,7 @@ interface CandidatoResult {
   municipio: string;
   codigoMunicipio: string;
   ano: number;
+  totalVotos: number;
 }
 
 Deno.serve(async (req) => {
@@ -331,6 +332,17 @@ Deno.serve(async (req) => {
               const nomeCompleto = (c.nomeCompleto || "").toUpperCase();
               const nomeUrnaCand = (c.nomeUrna || "").toUpperCase();
               if (nomeCompleto.includes(searchTerm) || nomeUrnaCand.includes(searchTerm)) {
+                // Try to get vote count from candidate details
+                let totalVotos = 0;
+                try {
+                  const detailUrl = `https://divulgacandcontas.tse.jus.br/divulga/rest/v1/candidatura/buscar/${ano}/${codigo}/${eleicaoId}/candidato/${c.id}`;
+                  const detailResp = await fetch(detailUrl, { headers: { 'Accept': 'application/json' } });
+                  if (detailResp.ok) {
+                    const detail = await detailResp.json();
+                    totalVotos = parseInt(detail.totalVotos) || parseInt(detail.quantidadeVotos) || 0;
+                  }
+                } catch (_) { /* ignore */ }
+
                 results.push({
                   id: c.id,
                   nome: c.nomeCompleto || c.nomeUrna,
@@ -341,6 +353,7 @@ Deno.serve(async (req) => {
                   municipio: nomeMunicipio,
                   codigoMunicipio: codigo,
                   ano,
+                  totalVotos,
                 });
               }
             }
