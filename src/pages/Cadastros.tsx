@@ -61,10 +61,50 @@ export default function Cadastros() {
     );
   }
 
+  const handleValidateVotes = async () => {
+    setValidating(true);
+    setValidationProgress("Iniciando validação...");
+    try {
+      const results = await validateAllVotes((cur, total, nome) => {
+        setValidationProgress(`${cur}/${total} — ${nome}`);
+      });
+      if (results.length === 0) {
+        toast({ title: "✅ Todos os votos estão corretos!" });
+      } else {
+        const updated = results.filter(r => r.updated);
+        toast({
+          title: `🗳️ ${updated.length} registro(s) atualizado(s)`,
+          description: updated.map(r => `${r.nome}: ${r.votosAntigo} → ${r.votosNovo}`).join(", "),
+        });
+        refetch();
+      }
+    } catch (e: any) {
+      toast({ title: "Erro na validação", description: e.message, variant: "destructive" });
+    } finally {
+      setValidating(false);
+      setValidationProgress("");
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-foreground">Fichas Cadastradas</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-xl font-bold text-foreground">Fichas Cadastradas</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleValidateVotes}
+          disabled={validating}
+          className="text-xs gap-1.5"
+        >
+          {validating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+          {validating ? "Validando..." : "Validar Votos"}
+        </Button>
+      </div>
 
+      {validating && validationProgress && (
+        <p className="text-xs text-muted-foreground animate-pulse px-1">{validationProgress}</p>
+      )}
       <div className="relative">
         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input
