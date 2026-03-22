@@ -280,7 +280,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { nome, ano = 2024, codigoMunicipio } = await req.json();
+    const { nome, ano = 2024, codigosMunicipios } = await req.json();
 
     if (!nome || nome.trim().length < 3) {
       return new Response(
@@ -299,10 +299,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // If a specific municipality code is provided, only search that one
+    // Support multiple municipality codes
     let entries: [string, string][];
-    if (codigoMunicipio && MUNICIPIOS_GO[codigoMunicipio]) {
-      entries = [[codigoMunicipio, MUNICIPIOS_GO[codigoMunicipio]]];
+    if (Array.isArray(codigosMunicipios) && codigosMunicipios.length > 0) {
+      entries = codigosMunicipios
+        .filter((c: string) => MUNICIPIOS_GO[c])
+        .map((c: string) => [c, MUNICIPIOS_GO[c]] as [string, string]);
     } else {
       entries = Object.entries(MUNICIPIOS_GO);
     }
