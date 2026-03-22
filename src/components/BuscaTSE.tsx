@@ -299,6 +299,32 @@ const getCidadeNames = (codes: string[]) => {
   return `${names[0]} +${names.length - 1}`;
 };
 
+const parseCsvLine = (line: string) => {
+  const values: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === '"') {
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (char === ';' && !inQuotes) {
+      values.push(current);
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  values.push(current);
+  return values;
+};
+
 export default function BuscaTSE({ onSelect }: Props) {
   const [nome, setNome] = useState("");
   const [ano, setAno] = useState("2024");
