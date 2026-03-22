@@ -128,9 +128,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Resumo por Candidato - Cards mobile-friendly */}
+      {/* Resumo por Suplente - Cards mobile-friendly */}
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Resumo por Candidato</h2>
+        <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Resumo por Suplente</h2>
 
         {visibleList.map((s: any) => {
           const liderancas = s.liderancas_qtd || 0;
