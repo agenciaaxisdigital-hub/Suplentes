@@ -366,7 +366,7 @@ export default function BuscaTSE({ onSelect }: Props) {
     setNome(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (value.trim().length >= 3) {
-      debounceRef.current = setTimeout(() => doSearch(value, ano, selectedCodes), 100);
+      debounceRef.current = setTimeout(() => doSearch(value, ano, selectedCodes), 50);
     } else {
       setResults([]);
       setShowResults(false);
@@ -388,7 +388,7 @@ export default function BuscaTSE({ onSelect }: Props) {
       // Re-search if user has typed
       if (nome.trim().length >= 3) {
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => doSearch(nome, ano, next), 100);
+        debounceRef.current = setTimeout(() => doSearch(nome, ano, next), 50);
       }
       return next;
     });
@@ -399,7 +399,7 @@ export default function BuscaTSE({ onSelect }: Props) {
     setCidadeOpen(false);
     if (nome.trim().length >= 3) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => doSearch(nome, ano, []), 100);
+      debounceRef.current = setTimeout(() => doSearch(nome, ano, []), 50);
     }
   };
 
