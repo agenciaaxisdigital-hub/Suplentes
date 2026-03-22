@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      pessoas: {
+        Row: {
+          atualizado_em: string | null
+          cpf: string
+          criado_em: string | null
+          data_nascimento: string | null
+          email: string | null
+          id: string
+          instagram: string | null
+          municipio: string | null
+          nome: string | null
+          observacoes_gerais: string | null
+          origem: string | null
+          outras_redes: string | null
+          secao_eleitoral: string | null
+          situacao_titulo: string | null
+          telefone: string | null
+          titulo_eleitor: string | null
+          uf: string | null
+          whatsapp: string | null
+          zona_eleitoral: string | null
+        }
+        Insert: {
+          atualizado_em?: string | null
+          cpf: string
+          criado_em?: string | null
+          data_nascimento?: string | null
+          email?: string | null
+          id?: string
+          instagram?: string | null
+          municipio?: string | null
+          nome?: string | null
+          observacoes_gerais?: string | null
+          origem?: string | null
+          outras_redes?: string | null
+          secao_eleitoral?: string | null
+          situacao_titulo?: string | null
+          telefone?: string | null
+          titulo_eleitor?: string | null
+          uf?: string | null
+          whatsapp?: string | null
+          zona_eleitoral?: string | null
+        }
+        Update: {
+          atualizado_em?: string | null
+          cpf?: string
+          criado_em?: string | null
+          data_nascimento?: string | null
+          email?: string | null
+          id?: string
+          instagram?: string | null
+          municipio?: string | null
+          nome?: string | null
+          observacoes_gerais?: string | null
+          origem?: string | null
+          outras_redes?: string | null
+          secao_eleitoral?: string | null
+          situacao_titulo?: string | null
+          telefone?: string | null
+          titulo_eleitor?: string | null
+          uf?: string | null
+          whatsapp?: string | null
+          zona_eleitoral?: string | null
+        }
+        Relationships: []
+      }
       suplentes: {
         Row: {
           ano_eleicao: number | null
@@ -92,15 +158,120 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      usuarios: {
+        Row: {
+          criado_em: string | null
+          email: string
+          id: string
+          nome_usuario: string
+          user_id: string
+        }
+        Insert: {
+          criado_em?: string | null
+          email: string
+          id?: string
+          nome_usuario: string
+          user_id: string
+        }
+        Update: {
+          criado_em?: string | null
+          email?: string
+          id?: string
+          nome_usuario?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      visitas: {
+        Row: {
+          assunto: string | null
+          atualizado_em: string | null
+          cadastrado_por: string | null
+          criado_em: string | null
+          data_hora: string | null
+          descricao_assunto: string | null
+          id: string
+          observacoes: string | null
+          origem_visita: string | null
+          pessoa_id: string | null
+          quem_indicou: string | null
+          responsavel_tratativa: string | null
+          status: string | null
+        }
+        Insert: {
+          assunto?: string | null
+          atualizado_em?: string | null
+          cadastrado_por?: string | null
+          criado_em?: string | null
+          data_hora?: string | null
+          descricao_assunto?: string | null
+          id?: string
+          observacoes?: string | null
+          origem_visita?: string | null
+          pessoa_id?: string | null
+          quem_indicou?: string | null
+          responsavel_tratativa?: string | null
+          status?: string | null
+        }
+        Update: {
+          assunto?: string | null
+          atualizado_em?: string | null
+          cadastrado_por?: string | null
+          criado_em?: string | null
+          data_hora?: string | null
+          descricao_assunto?: string | null
+          id?: string
+          observacoes?: string | null
+          origem_visita?: string | null
+          pessoa_id?: string | null
+          quem_indicou?: string | null
+          responsavel_tratativa?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitas_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: { Args: { _user_id: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "recepcao"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -227,6 +398,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "recepcao"],
+    },
   },
 } as const
