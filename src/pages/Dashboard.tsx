@@ -60,7 +60,7 @@ export default function Dashboard() {
       <div className="relative">
         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Buscar candidato por nome ou região..."
+          placeholder="Buscar suplente por nome ou região..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-10 bg-card border-border"
