@@ -94,12 +94,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-b from-[#0d0610] via-[#10080c] to-[#080406] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ background: '#070510' }}>
       {/* Hyperspeed background */}
       <Hyperspeed effectOptions={preset} />
 
-      {/* Dark overlay for readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0d0610]/60 via-transparent to-[#0d0610]/40 z-[1]" />
+      {/* Subtle vignette for readability — no black blocks */}
+      <div className="absolute inset-0 z-[1] pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(7,5,16,0.5) 100%)' }} />
 
       <div className="w-full max-w-sm space-y-6 relative z-10">
         {/* Photo + Identity */}
