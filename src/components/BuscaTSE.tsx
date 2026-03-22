@@ -335,6 +335,7 @@ export default function BuscaTSE({ onSelect }: Props) {
   const [showResults, setShowResults] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
+  const votosCacheRef = useRef<Map<string, number>>(new Map());
 
   // Fetch votes from TSE results API (client-side, since server gets 403)
   const fetchVotesForResults = useCallback(async (candidatos: CandidatoResult[]) => {
