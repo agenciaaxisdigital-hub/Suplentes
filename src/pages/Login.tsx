@@ -14,39 +14,39 @@ const EMAIL_DOMAIN = "@painel.sarelli.com";
 const DOCTOR_PHOTO =
   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
 
-// Elegant deep pink Hyperspeed preset
+// Immersive infinite-feel Hyperspeed preset
 const hyperspeedPreset = {
   onSpeedUp: () => {},
   onSlowDown: () => {},
-  distortion: 'deepDistortion',
-  length: 600,
-  roadWidth: 8,
-  islandWidth: 3,
-  lanesPerRoad: 2,
-  fov: 80,
-  fovSpeedUp: 120,
-  speedUp: 3,
-  carLightsFade: 0.35,
-  totalSideLightSticks: 30,
-  lightPairsPerRoadWay: 60,
-  shoulderLinesWidthPercentage: 0.03,
-  brokenLinesWidthPercentage: 0.08,
-  brokenLinesLengthPercentage: 0.6,
-  lightStickWidth: [0.08, 0.35],
-  lightStickHeight: [1.5, 2.1],
-  movingAwaySpeed: [80, 120],
-  movingCloserSpeed: [-150, -200],
-  carLightsLength: [600 * 0.05, 600 * 0.15],
-  carLightsRadius: [0.03, 0.1],
-  carWidthPercentage: [0.2, 0.4],
-  carShiftX: [-0.6, 0.6],
-  carFloorSeparation: [0.5, 3],
+  distortion: 'turbulentDistortion',
+  length: 800,
+  roadWidth: 18,
+  islandWidth: 4,
+  lanesPerRoad: 3,
+  fov: 100,
+  fovSpeedUp: 140,
+  speedUp: 2,
+  carLightsFade: 0.4,
+  totalSideLightSticks: 40,
+  lightPairsPerRoadWay: 80,
+  shoulderLinesWidthPercentage: 0.05,
+  brokenLinesWidthPercentage: 0.1,
+  brokenLinesLengthPercentage: 0.5,
+  lightStickWidth: [0.12, 0.5],
+  lightStickHeight: [1.3, 1.7],
+  movingAwaySpeed: [60, 100],
+  movingCloserSpeed: [-120, -180],
+  carLightsLength: [800 * 0.04, 800 * 0.14],
+  carLightsRadius: [0.05, 0.14],
+  carWidthPercentage: [0.3, 0.5],
+  carShiftX: [-0.8, 0.8],
+  carFloorSeparation: [0, 5],
   colors: {
-    roadColor: 0x0a0408,
-    islandColor: 0x0c060a,
-    background: 0x000000,
-    shoulderLines: 0x2a1020,
-    brokenLines: 0x2a1020,
+    roadColor: 0x080510,
+    islandColor: 0x0a0812,
+    background: 0x070510,
+    shoulderLines: 0x1a0a1a,
+    brokenLines: 0x1a0a1a,
     leftCars: [0xec4899, 0xf9a8d4, 0xbe185d, 0xfda4af],
     rightCars: [0xf43f5e, 0xff6b9d, 0xc026d3, 0xe879f9],
     sticks: 0xf472b6,
@@ -94,12 +94,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-b from-[#0d0610] via-[#10080c] to-[#080406] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ background: '#070510' }}>
       {/* Hyperspeed background */}
       <Hyperspeed effectOptions={preset} />
 
-      {/* Dark overlay for readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0d0610]/60 via-transparent to-[#0d0610]/40 z-[1]" />
+      {/* Subtle vignette for readability — no black blocks */}
+      <div className="absolute inset-0 z-[1] pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(7,5,16,0.5) 100%)' }} />
 
       <div className="w-full max-w-sm space-y-6 relative z-10">
         {/* Photo + Identity */}
