@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Normaliza nome removendo acentos e uppercase
  */
-function normalize(str: string): string {
+export function normalize(str: string): string {
   return str
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -15,7 +15,7 @@ function normalize(str: string): string {
  * Calcula similaridade simples entre dois nomes normalizados
  * Retorna true se um contém o outro ou se são muito parecidos
  */
-function namesMatch(dbName: string, tseName: string): boolean {
+export function namesMatch(dbName: string, tseName: string): boolean {
   const a = normalize(dbName);
   const b = normalize(tseName);
   if (a === b) return true;
