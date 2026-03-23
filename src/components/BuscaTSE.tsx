@@ -309,6 +309,18 @@ export default function BuscaTSE({ onSelect }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
   const votosCacheRef = useRef<Record<string, number> | null>(null);
+  const existingNamesRef = useRef<Set<string> | null>(null);
+
+  const fetchExistingNames = useCallback(async (): Promise<Set<string>> => {
+    if (existingNamesRef.current !== null) return existingNamesRef.current;
+    try {
+      const { data } = await supabase.from("suplentes").select("nome");
+      existingNamesRef.current = new Set((data || []).map((s: any) => (s.nome || "").toUpperCase().trim()));
+    } catch {
+      existingNamesRef.current = new Set();
+    }
+    return existingNamesRef.current;
+  }, []);
 
   const fetchVotesForResults = useCallback(async (candidatos: CandidatoResult[]) => {
     if (candidatos.length === 0) return candidatos;
@@ -346,13 +358,18 @@ export default function BuscaTSE({ onSelect }: Props) {
       const body: Record<string, unknown> = { nome: searchTerm.trim(), ano: parseInt(year) };
       if (codes.length > 0) body.codigosMunicipios = codes;
 
-      const { data, error } = await supabase.functions.invoke("buscar-candidato-tse", { body });
+      const [{ data, error }, existingNames] = await Promise.all([
+        supabase.functions.invoke("buscar-candidato-tse", { body }),
+        fetchExistingNames(),
+      ]);
       if (error) throw error;
-      let resultados = data.resultados || [];
-      
+      let resultados: CandidatoResult[] = (data.resultados || []).filter(
+        (c: CandidatoResult) => !existingNames.has(c.nome.toUpperCase().trim())
+      );
+
       // Fetch votes client-side
       resultados = await fetchVotesForResults(resultados);
-      
+
       setResults(resultados);
     } catch (e: any) {
       toast({ title: "Erro na busca", description: e.message, variant: "destructive" });
@@ -374,6 +391,8 @@ export default function BuscaTSE({ onSelect }: Props) {
   };
 
   const handleSelect = (c: CandidatoResult) => {
+    // Invalidate cache so next search reflects the newly added candidate
+    existingNamesRef.current = null;
     onSelect(c);
     setNome(c.nome);
     setShowResults(false);
