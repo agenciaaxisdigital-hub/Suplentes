@@ -10,6 +10,7 @@ import { exportFichasLotePDF, exportSuplentePDF } from "@/lib/exports";
 import { validateAllVotes } from "@/lib/validateVotes";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 import { validateAllFinancials } from "@/lib/validateFinancials";
+import { validateRequiredData } from "@/lib/validateRequiredData";
 
 export default function Cadastros() {
   const [search, setSearch] = useState("");
@@ -107,10 +108,30 @@ export default function Cadastros() {
     }
   };
 
+  const runAutoValidateRequiredData = async () => {
+    try {
+      const results = await validateRequiredData();
+      if (results.length > 0) {
+        const updated = results.filter((r) => r.updated).length;
+        toast({
+          title: `Dados obrigatorios ajustados: ${updated}`,
+          description: "Partido e votos faltantes foram atualizados automaticamente quando encontrados no TSE.",
+        });
+        refetch();
+      }
+    } catch (e: any) {
+      console.error("Erro na validacao automatica de dados obrigatorios:", e?.message || e);
+    }
+  };
+
   useEffect(() => {
     // Roda ao entrar na tela e novamente a cada 1 hora.
+    runAutoValidateRequiredData();
     runAutoValidateTotals();
-    const intervalId = window.setInterval(runAutoValidateTotals, 60 * 60 * 1000);
+    const intervalId = window.setInterval(() => {
+      runAutoValidateRequiredData();
+      runAutoValidateTotals();
+    }, 60 * 60 * 1000);
     return () => window.clearInterval(intervalId);
   }, []);
 

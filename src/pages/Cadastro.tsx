@@ -84,6 +84,14 @@ export default function Cadastro({ initial, onSaved }: Props) {
       toast({ title: "Nome obrigatório", variant: "destructive" });
       return;
     }
+    if (!form.partido.trim()) {
+      toast({ title: "Partido obrigatório", description: "Informe o partido antes de salvar.", variant: "destructive" });
+      return;
+    }
+    if (!Number.isFinite(form.total_votos) || form.total_votos <= 0) {
+      toast({ title: "Votos obrigatórios", description: "Informe o total de votos maior que zero.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
 
     // Verificar duplicata por nome — tanto em INSERT quanto em UPDATE
@@ -210,7 +218,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Partido">
+          <Field label="Partido" required>
             <Input value={form.partido} onChange={(e) => set("partido", e.target.value)} className="bg-card shadow-sm border-border" />
           </Field>
           <Field label="Situação">
@@ -226,7 +234,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Votos Eleição Passada">
+          <Field label="Votos Eleição Passada" required>
             <Input type="number" inputMode="numeric" value={form.total_votos || ""} onChange={(e) => setNum("total_votos", e.target.value)} placeholder="0" className="bg-card shadow-sm border-border" />
           </Field>
           <Field label="Expectativa de Votos">
