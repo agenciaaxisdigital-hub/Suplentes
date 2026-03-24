@@ -86,16 +86,23 @@ export default function Cadastro({ initial, onSaved }: Props) {
     }
     setSaving(true);
 
-    // Verificar duplicata antes de inserir (somente em novos cadastros)
-    if (!initial?.id) {
-      const { data: duplicado } = await supabase
+    // Verificar duplicata por nome — tanto em INSERT quanto em UPDATE
+    {
+      let query = supabase
         .from("suplentes")
         .select("id, nome")
-        .ilike("nome", form.nome.trim())
-        .maybeSingle();
+        .ilike("nome", form.nome.trim());
+      // Em edição, exclui o próprio registro da verificação
+      if (initial?.id) query = query.neq("id", initial.id);
+      const { data: duplicado, error: dupError } = await query.maybeSingle();
+      if (dupError) {
+        toast({ title: "Erro ao verificar duplicata", description: dupError.message, variant: "destructive" });
+        setSaving(false);
+        return;
+      }
       if (duplicado) {
         toast({
-          title: "Suplente já cadastrado",
+          title: "Nome já cadastrado",
           description: `"${duplicado.nome}" já existe na base de dados.`,
           variant: "destructive",
         });

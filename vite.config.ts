@@ -17,9 +17,9 @@ export default defineConfig(() => ({
       registerType: "autoUpdate",
       includeAssets: ["icon-192.png", "icon-512.png"],
       manifest: {
-        name: "Painel Suplentes — Dra. Fernanda Sarelli",
-        short_name: "Painel FS",
-        description: "Gestão de suplentes e campanha política",
+        name: "Suplentes - Dra. Fernanda Sarelli",
+        short_name: "Suplentes",
+        description: "Banco de Suplentes e Equipes",
         theme_color: "#ec4899",
         background_color: "#0f0f0f",
         display: "standalone",

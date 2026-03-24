@@ -55,7 +55,7 @@ const hyperspeedPreset = {
 
 export default function Login() {
   const [username, setUsername] = useState(() => localStorage.getItem("saved_user") || "");
-  const [password, setPassword] = useState(() => localStorage.getItem("saved_pass") || "");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [remember, setRemember] = useState(() => !!localStorage.getItem("saved_user"));
@@ -82,13 +82,14 @@ export default function Login() {
         variant: "destructive",
       });
     } else {
+      // Salva apenas o usuário (nunca a senha) para conveniência de preenchimento
       if (remember) {
         localStorage.setItem("saved_user", username);
-        localStorage.setItem("saved_pass", password);
       } else {
         localStorage.removeItem("saved_user");
-        localStorage.removeItem("saved_pass");
       }
+      // Garante remoção de qualquer senha que possa ter ficado de versão anterior
+      localStorage.removeItem("saved_pass");
       navigate("/");
     }
   };
