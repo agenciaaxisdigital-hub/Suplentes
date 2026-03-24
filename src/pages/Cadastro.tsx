@@ -85,6 +85,25 @@ export default function Cadastro({ initial, onSaved }: Props) {
       return;
     }
     setSaving(true);
+
+    // Verificar duplicata antes de inserir (somente em novos cadastros)
+    if (!initial?.id) {
+      const { data: duplicado } = await supabase
+        .from("suplentes")
+        .select("id, nome")
+        .ilike("nome", form.nome.trim())
+        .maybeSingle();
+      if (duplicado) {
+        toast({
+          title: "Suplente já cadastrado",
+          description: `"${duplicado.nome}" já existe na base de dados.`,
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+    }
+
     const payload = { ...form, total_campanha: totalCampanha };
 
     let error;

@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { normalize } from "@/lib/validateVotes";
 
 interface CandidatoResult {
   id: number;
@@ -22,6 +23,7 @@ interface CandidatoResult {
   ano: number;
   totalVotos: number;
 }
+
 
 interface Props {
   onSelect: (candidato: CandidatoResult) => void;
@@ -312,14 +314,15 @@ export default function BuscaTSE({ onSelect }: Props) {
   const existingNamesRef = useRef<Set<string> | null>(null);
 
   const fetchExistingNames = useCallback(async (): Promise<Set<string>> => {
-    if (existingNamesRef.current !== null) return existingNamesRef.current;
+    // Sempre busca dados frescos — garante que cadastros recentes sejam excluídos
+    // e que nomes com/sem acentos sejam comparados corretamente via NFD normalize
     try {
       const { data } = await supabase.from("suplentes").select("nome");
-      existingNamesRef.current = new Set((data || []).map((s: any) => (s.nome || "").toUpperCase().trim()));
+      existingNamesRef.current = new Set((data || []).map((s: any) => normalize(s.nome || "")));
     } catch {
       existingNamesRef.current = new Set();
     }
-    return existingNamesRef.current;
+    return existingNamesRef.current!;
   }, []);
 
   const fetchVotesForResults = useCallback(async (candidatos: CandidatoResult[]) => {
@@ -363,8 +366,9 @@ export default function BuscaTSE({ onSelect }: Props) {
         fetchExistingNames(),
       ]);
       if (error) throw error;
+      // Filtra candidatos já cadastrados usando normalize (remove acentos) para comparação segura
       let resultados: CandidatoResult[] = (data.resultados || []).filter(
-        (c: CandidatoResult) => !existingNames.has(c.nome.toUpperCase().trim())
+        (c: CandidatoResult) => !existingNames.has(normalize(c.nome))
       );
 
       // Fetch votes client-side
@@ -391,8 +395,6 @@ export default function BuscaTSE({ onSelect }: Props) {
   };
 
   const handleSelect = (c: CandidatoResult) => {
-    // Invalidate cache so next search reflects the newly added candidate
-    existingNamesRef.current = null;
     onSelect(c);
     setNome(c.nome);
     setShowResults(false);
