@@ -5,6 +5,7 @@ import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { exportAllPDF, exportExcel } from "@/lib/exports";
+import { calcTotaisFinanceiros } from "@/lib/finance";
 
 export default function Dashboard() {
   const [expanded, setExpanded] = useState(false);
@@ -34,7 +35,7 @@ export default function Dashboard() {
   const totalLiderancas = list.reduce((a: number, s: any) => a + (s.liderancas_qtd || 0), 0);
   const totalFiscais = list.reduce((a: number, s: any) => a + (s.fiscais_qtd || 0), 0);
   const totalPessoas = totalLiderancas + totalFiscais;
-  const totalCampanha = list.reduce((a: number, s: any) => a + (Number(s.total_campanha) || 0), 0);
+  const totalCampanha = list.reduce((a: number, s: any) => a + calcTotaisFinanceiros(s).totalFinal, 0);
   const totalPlotagem = list.reduce((a: number, s: any) => a + (s.plotagem_qtd || 0), 0);
   const totalRetirada = list.reduce((a: number, s: any) => a + ((s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0)), 0);
 
@@ -155,7 +156,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <span className="text-sm font-bold text-primary whitespace-nowrap">
-                    {fmt(Number(s.total_campanha) || 0)}
+                    {fmt(calcTotaisFinanceiros(s).totalFinal)}
                   </span>
                 </div>
               </div>

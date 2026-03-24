@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { calcTotaisFinanceiros } from "@/lib/finance";
 
 const PINK = [236, 72, 153] as const; // pink-500
 const ROSE = [251, 113, 133] as const; // rose-400
@@ -71,7 +72,7 @@ export function exportSuplentePDF(s: any) {
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...GRAY);
-    doc.text(`📍 ${s.regiao_atuacao}`, 14, y);
+    doc.text(`Regiao: ${s.regiao_atuacao}`, 14, y);
     y += 6;
   }
 
@@ -126,10 +127,7 @@ export function exportSuplentePDF(s: any) {
   doc.text("VALORES DA CAMPANHA", 14, y);
   y += 4;
 
-  const retirada = (s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0);
-  const plotagem = (s.plotagem_qtd || 0) * (s.plotagem_valor_unit || 0);
-  const liderancas = (s.liderancas_qtd || 0) * (s.liderancas_valor_unit || 0);
-  const fiscais = (s.fiscais_qtd || 0) * (s.fiscais_valor_unit || 0);
+  const { retirada, plotagem, liderancas, fiscais, totalFinal } = calcTotaisFinanceiros(s);
 
   autoTable(doc, {
     startY: y,
@@ -140,7 +138,7 @@ export function exportSuplentePDF(s: any) {
       ["Lideranças na Campanha", `${fmtN(s.liderancas_qtd || 0)} x ${fmt(s.liderancas_valor_unit || 0)}`, fmt(liderancas)],
       ["Fiscais no Dia da Eleição", `${fmtN(s.fiscais_qtd || 0)} x ${fmt(s.fiscais_valor_unit || 0)}`, fmt(fiscais)],
     ],
-    foot: [["TOTAL CAMPANHA", "", fmt(Number(s.total_campanha) || 0)]],
+    foot: [["TOTAL CAMPANHA", "", fmt(totalFinal)]],
     margin: { left: 14, right: 14 },
     headStyles: { fillColor: [...PINK], textColor: [...WHITE], fontStyle: "bold", fontSize: 8 },
     bodyStyles: { fontSize: 8, textColor: [...DARK] },
@@ -184,6 +182,103 @@ export function exportSuplentePDF(s: any) {
   doc.save(`Ficha_${(s.nome || "suplente").replace(/\s+/g, "_")}.pdf`);
 }
 
+export function exportFichasLotePDF(list: any[]) {
+  if (!list.length) return;
+
+  const doc = new jsPDF("p", "mm", "a4");
+  list.forEach((s, index) => {
+    if (index > 0) doc.addPage();
+
+    const w = doc.internal.pageSize.getWidth();
+    addHeader(doc, `FICHA POLITICA ${index + 1}/${list.length}`);
+
+    let y = 42;
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...DARK);
+    doc.text(s.nome || "", 14, y);
+    y += 8;
+
+    if (s.regiao_atuacao) {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...GRAY);
+      doc.text(`Regiao: ${s.regiao_atuacao}`, 14, y);
+      y += 6;
+    }
+
+    doc.setDrawColor(...PINK);
+    doc.setLineWidth(0.5);
+    doc.line(14, y, w - 14, y);
+    y += 8;
+
+    const infoData = [
+      ["Telefone", s.telefone || "-"],
+      ["Cargo Disputado", s.cargo_disputado || "-"],
+      ["Ano Eleicao", String(s.ano_eleicao || "-")],
+      ["Partido", s.partido || "-"],
+      ["Situacao", s.situacao || "-"],
+      ["Total de Votos", fmtN(s.total_votos || 0)],
+      ["Expectativa de Votos", fmtN(s.expectativa_votos || 0)],
+    ];
+
+    doc.setFontSize(9);
+    infoData.forEach(([label, value]) => {
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...GRAY);
+      doc.text(label, 14, y);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...DARK);
+      doc.text(value, 80, y);
+      y += 6;
+    });
+
+    y += 4;
+    if (s.base_politica) {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...PINK);
+      doc.text("BASE POLITICA", 14, y);
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...DARK);
+      const lines = doc.splitTextToSize(s.base_politica, w - 28);
+      doc.text(lines, 14, y);
+      y += lines.length * 4.5 + 6;
+    }
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...PINK);
+    doc.text("VALORES DA CAMPANHA", 14, y);
+    y += 4;
+
+    const { retirada, plotagem, liderancas, fiscais, totalFinal } = calcTotaisFinanceiros(s);
+
+    autoTable(doc, {
+      startY: y,
+      head: [["Item", "Calculo", "Subtotal"]],
+      body: [
+        ["Retirada Mensal", `${fmt(s.retirada_mensal_valor || 0)} x ${s.retirada_mensal_meses || 0} meses`, fmt(retirada)],
+        ["Plotagem", `${fmtN(s.plotagem_qtd || 0)} x ${fmt(s.plotagem_valor_unit || 0)}`, fmt(plotagem)],
+        ["Liderancas na Campanha", `${fmtN(s.liderancas_qtd || 0)} x ${fmt(s.liderancas_valor_unit || 0)}`, fmt(liderancas)],
+        ["Fiscais no Dia da Eleicao", `${fmtN(s.fiscais_qtd || 0)} x ${fmt(s.fiscais_valor_unit || 0)}`, fmt(fiscais)],
+      ],
+      foot: [["TOTAL CAMPANHA", "", fmt(totalFinal)]],
+      margin: { left: 14, right: 14 },
+      headStyles: { fillColor: [...PINK], textColor: [...WHITE], fontStyle: "bold", fontSize: 8 },
+      bodyStyles: { fontSize: 8, textColor: [...DARK] },
+      footStyles: { fillColor: [252, 231, 243], textColor: [...PINK], fontStyle: "bold", fontSize: 9 },
+      alternateRowStyles: { fillColor: [250, 250, 250] },
+      theme: "grid",
+      styles: { cellPadding: 3 },
+    });
+  });
+
+  addFooter(doc);
+  doc.save("Fichas_Suplentes_Lote.pdf");
+}
+
 export function exportAllPDF(list: any[]) {
   const doc = new jsPDF("l", "mm", "a4"); // landscape
   const w = doc.internal.pageSize.getWidth();
@@ -193,7 +288,7 @@ export function exportAllPDF(list: any[]) {
   const totalVotos = list.reduce((a, s) => a + (s.total_votos || 0), 0);
   const totalExpect = list.reduce((a, s) => a + (s.expectativa_votos || 0), 0);
   const totalPessoas = list.reduce((a, s) => a + (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0), 0);
-  const totalCampanha = list.reduce((a, s) => a + (Number(s.total_campanha) || 0), 0);
+  const totalCampanha = list.reduce((a, s) => a + calcTotaisFinanceiros(s).totalFinal, 0);
 
   // Summary cards
   let y = 38;
@@ -240,7 +335,7 @@ export function exportAllPDF(list: any[]) {
       fmtN(s.liderancas_qtd || 0),
       fmtN(s.fiscais_qtd || 0),
       fmtN((s.liderancas_qtd || 0) + (s.fiscais_qtd || 0)),
-      fmt(Number(s.total_campanha) || 0),
+      fmt(calcTotaisFinanceiros(s).totalFinal),
     ]),
     foot: [["", "TOTAL", "", "", fmtN(totalVotos), fmtN(totalExpect), "", "", fmtN(totalPessoas), fmt(totalCampanha)]],
     margin: { left: 14, right: 14 },
@@ -286,7 +381,7 @@ export function exportExcel(list: any[]) {
     "Fiscais Qtd": s.fiscais_qtd || 0,
     "Fiscais Unit. (R$)": s.fiscais_valor_unit || 0,
     "Total Pessoas": (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0),
-    "Total Campanha (R$)": Number(s.total_campanha) || 0,
+    "Total Campanha (R$)": calcTotaisFinanceiros(s).totalFinal,
   }));
 
   // Add TOTAL row
@@ -309,7 +404,7 @@ export function exportExcel(list: any[]) {
     "Fiscais Qtd": list.reduce((a, s) => a + (s.fiscais_qtd || 0), 0),
     "Fiscais Unit. (R$)": "",
     "Total Pessoas": list.reduce((a, s) => a + (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0), 0),
-    "Total Campanha (R$)": list.reduce((a, s) => a + (Number(s.total_campanha) || 0), 0),
+    "Total Campanha (R$)": list.reduce((a, s) => a + calcTotaisFinanceiros(s).totalFinal, 0),
   } as any);
 
   const ws = XLSX.utils.json_to_sheet(data);

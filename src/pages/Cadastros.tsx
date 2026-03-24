@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown, Phone, Users, Eye, Car, UserCheck, Banknote, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Cadastro from "./Cadastro";
-import { exportSuplentePDF } from "@/lib/exports";
+import { exportFichasLotePDF, exportSuplentePDF } from "@/lib/exports";
 import { validateAllVotes } from "@/lib/validateVotes";
+import { calcTotaisFinanceiros } from "@/lib/finance";
+import { validateAllFinancials } from "@/lib/validateFinancials";
 
 export default function Cadastros() {
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
+  const [validatingTotals, setValidatingTotals] = useState(false);
   const [validationProgress, setValidationProgress] = useState("");
 
   const { data: suplentes, refetch } = useQuery({
@@ -86,23 +89,72 @@ export default function Cadastros() {
     }
   };
 
+  const handleValidateTotals = async () => {
+    setValidatingTotals(true);
+    setValidationProgress("Iniciando validacao total dos valores...");
+    try {
+      const results = await validateAllFinancials((cur, total, nome) => {
+        setValidationProgress(`${cur}/${total} - ${nome}`);
+      });
+
+      if (results.length === 0) {
+        toast({ title: "✅ Todos os valores e totais estao corretos!" });
+      } else {
+        const fixed = results.filter((r) => r.updated).length;
+        const withIssues = results.filter((r) => r.issues.length > 0).length;
+        toast({
+          title: `Validacao concluida: ${results.length} divergencia(s)`,
+          description: `${fixed} total(is) corrigido(s) automaticamente${withIssues > 0 ? `, ${withIssues} com alerta(s)` : ""}.`,
+        });
+        refetch();
+      }
+    } catch (e: any) {
+      toast({ title: "Erro na validacao total", description: e.message, variant: "destructive" });
+    } finally {
+      setValidatingTotals(false);
+      setValidationProgress("");
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-xl font-bold text-foreground">Fichas Cadastradas</h1>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleValidateVotes}
-          disabled={validating}
-          className="text-xs gap-1.5"
-        >
-          {validating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-          {validating ? "Validando..." : "Validar Votos"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportFichasLotePDF(filtered)}
+            disabled={filtered.length === 0}
+            className="text-xs gap-1.5"
+          >
+            <FileDown size={14} />
+            Exportar Todas Fichas
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleValidateVotes}
+            disabled={validating || validatingTotals}
+            className="text-xs gap-1.5"
+          >
+            {validating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+            {validating ? "Validando..." : "Validar Votos"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleValidateTotals}
+            disabled={validating || validatingTotals}
+            className="text-xs gap-1.5"
+          >
+            {validatingTotals ? <Loader2 size={14} className="animate-spin" /> : <Banknote size={14} />}
+            {validatingTotals ? "Validando..." : "Validar Totais"}
+          </Button>
+        </div>
       </div>
 
-      {validating && validationProgress && (
+      {(validating || validatingTotals) && validationProgress && (
         <p className="text-xs text-muted-foreground animate-pulse px-1">{validationProgress}</p>
       )}
       <div className="relative">
@@ -149,7 +201,7 @@ export default function Cadastros() {
                       {s.situacao && <span className="text-[10px] font-medium uppercase tracking-wider text-primary">{s.situacao}</span>}
                     </div>
                   </div>
-                  <p className="text-sm font-bold text-primary whitespace-nowrap">{fmt(s.total_campanha)}</p>
+                  <p className="text-sm font-bold text-primary whitespace-nowrap">{fmt(calcTotaisFinanceiros(s).totalFinal)}</p>
                 </div>
               </button>
 

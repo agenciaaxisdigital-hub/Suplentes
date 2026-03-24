@@ -94,7 +94,7 @@ describe("estrutura do Excel exportado", () => {
 
 // ─── Funções de export existem e são callable ─────────────────────────────────
 
-describe("exportSuplentePDF e exportAllPDF e exportExcel — existência", () => {
+describe("exportSuplentePDF, exportFichasLotePDF, exportAllPDF e exportExcel — existência", () => {
   it("módulo de exports importa sem erros", async () => {
     // Mocka jsPDF e xlsx para não gerar arquivo real no teste
     vi.mock("jspdf", () => ({
@@ -118,6 +118,7 @@ describe("exportSuplentePDF e exportAllPDF e exportExcel — existência", () =>
 
     const mod = await import("@/lib/exports");
     expect(typeof mod.exportSuplentePDF).toBe("function");
+    expect(typeof mod.exportFichasLotePDF).toBe("function");
     expect(typeof mod.exportAllPDF).toBe("function");
     expect(typeof mod.exportExcel).toBe("function");
   });
