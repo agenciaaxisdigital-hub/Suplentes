@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown, Phone, Users, Eye, Car, UserCheck, Banknote, RefreshCw, Loader2 } from "lucide-react";
+import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown, Phone, Users, Eye, Car, UserCheck, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Cadastro from "./Cadastro";
 import { exportFichasLotePDF, exportSuplentePDF } from "@/lib/exports";
@@ -15,7 +15,6 @@ export default function Cadastros() {
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
-  const [validatingTotals, setValidatingTotals] = useState(false);
   const [validationProgress, setValidationProgress] = useState("");
 
   const { data: suplentes, refetch } = useQuery({
@@ -89,17 +88,11 @@ export default function Cadastros() {
     }
   };
 
-  const handleValidateTotals = async () => {
-    setValidatingTotals(true);
-    setValidationProgress("Iniciando validacao total dos valores...");
+  const runAutoValidateTotals = async () => {
     try {
-      const results = await validateAllFinancials((cur, total, nome) => {
-        setValidationProgress(`${cur}/${total} - ${nome}`);
-      });
+      const results = await validateAllFinancials();
 
-      if (results.length === 0) {
-        toast({ title: "✅ Todos os valores e totais estao corretos!" });
-      } else {
+      if (results.length > 0) {
         const fixed = results.filter((r) => r.updated).length;
         const withIssues = results.filter((r) => r.issues.length > 0).length;
         toast({
@@ -109,12 +102,17 @@ export default function Cadastros() {
         refetch();
       }
     } catch (e: any) {
-      toast({ title: "Erro na validacao total", description: e.message, variant: "destructive" });
-    } finally {
-      setValidatingTotals(false);
-      setValidationProgress("");
+      // Evita ruído em tela; mantém rastreável no console para suporte técnico.
+      console.error("Erro na validacao automatica de totais:", e?.message || e);
     }
   };
+
+  useEffect(() => {
+    // Roda ao entrar na tela e novamente a cada 1 hora.
+    runAutoValidateTotals();
+    const intervalId = window.setInterval(runAutoValidateTotals, 60 * 60 * 1000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -135,26 +133,16 @@ export default function Cadastros() {
             variant="outline"
             size="sm"
             onClick={handleValidateVotes}
-            disabled={validating || validatingTotals}
+            disabled={validating}
             className="text-xs gap-1.5"
           >
             {validating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
             {validating ? "Validando..." : "Validar Votos"}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleValidateTotals}
-            disabled={validating || validatingTotals}
-            className="text-xs gap-1.5"
-          >
-            {validatingTotals ? <Loader2 size={14} className="animate-spin" /> : <Banknote size={14} />}
-            {validatingTotals ? "Validando..." : "Validar Totais"}
-          </Button>
         </div>
       </div>
 
-      {(validating || validatingTotals) && validationProgress && (
+      {validating && validationProgress && (
         <p className="text-xs text-muted-foreground animate-pulse px-1">{validationProgress}</p>
       )}
       <div className="relative">
