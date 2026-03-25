@@ -101,22 +101,42 @@ export default function Login() {
     }
   };
 
-  // Shared transition helper
+  // Shared transition helper — each element flies in from deep Z-space
   const anim = (delay: number) => ({
     opacity: entered ? 1 : 0,
-    transform: entered ? 'translateY(0) scale(1)' : 'translateY(30px) scale(0.92)',
-    transition: `all 0.7s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s`,
+    transform: entered
+      ? 'perspective(1200px) translateY(0) translateZ(0) rotateX(0deg) scale(1)'
+      : 'perspective(1200px) translateY(60px) translateZ(-200px) rotateX(12deg) scale(0.85)',
+    transition: `all 0.9s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s`,
   });
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ background: '#070510' }}>
+    <div
+      className="min-h-[100dvh] flex flex-col items-center justify-center p-4 relative overflow-hidden"
+      style={{
+        background: '#070510',
+        perspective: '1200px',
+        perspectiveOrigin: '50% 40%',
+      }}
+    >
       {/* Hyperspeed background */}
       <Hyperspeed effectOptions={preset} />
 
-      {/* Subtle vignette for readability — no black blocks */}
+      {/* Subtle vignette for readability */}
       <div className="absolute inset-0 z-[1] pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(7,5,16,0.5) 100%)' }} />
 
-      <div className="w-full max-w-sm space-y-6 relative z-10">
+      {/* Whole card container — flies in from deep behind screen */}
+      <div
+        className="w-full max-w-sm space-y-6 relative z-10"
+        style={{
+          transformStyle: 'preserve-3d',
+          opacity: entered ? 1 : 0,
+          transform: entered
+            ? 'perspective(1200px) translateZ(0) rotateX(0deg)'
+            : 'perspective(1200px) translateZ(-400px) rotateX(8deg)',
+          transition: 'all 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0s',
+        }}
+      >
         {/* Photo + Identity */}
         <div className="text-center space-y-3">
           {/* Photo with zoom-in spin */}
