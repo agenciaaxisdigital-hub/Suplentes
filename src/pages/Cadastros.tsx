@@ -14,6 +14,7 @@ import { validateRequiredData } from "@/lib/validateRequiredData";
 
 export default function Cadastros() {
   const [search, setSearch] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const { data: suplentes, refetch } = useQuery({
     queryKey: ["suplentes"],
