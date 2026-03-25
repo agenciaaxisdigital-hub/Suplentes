@@ -59,10 +59,18 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [remember, setRemember] = useState(() => !!localStorage.getItem("saved_user"));
+  const [entered, setEntered] = useState(false);
   const navigate = useNavigate();
 
   // Memoize to prevent re-renders
   const preset = useMemo(() => hyperspeedPreset, []);
+
+  // Trigger entrance animation after mount
+  useState(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setEntered(true));
+    });
+  });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
