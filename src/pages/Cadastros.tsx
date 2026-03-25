@@ -3,11 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown, Phone, Users, Eye, Car, UserCheck, RefreshCw, Loader2 } from "lucide-react";
+import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Cadastro from "./Cadastro";
 import { exportFichasLotePDF, exportSuplentePDF } from "@/lib/exports";
-import { validateAllVotes } from "@/lib/validateVotes";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 import { validateAllFinancials } from "@/lib/validateFinancials";
 import { validateRequiredData } from "@/lib/validateRequiredData";
@@ -15,8 +14,6 @@ import { validateRequiredData } from "@/lib/validateRequiredData";
 export default function Cadastros() {
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [validating, setValidating] = useState(false);
-  const [validationProgress, setValidationProgress] = useState("");
 
   const { data: suplentes, refetch } = useQuery({
     queryKey: ["suplentes"],
@@ -50,49 +47,9 @@ export default function Cadastros() {
     }
   };
 
-  if (editing) {
-    return (
-      <div className="space-y-4">
-        <button onClick={() => setEditingId(null)} className="flex items-center gap-1 text-sm text-primary font-medium">
-          <ArrowLeft size={16} /> Voltar à lista
-        </button>
-        <Cadastro
-          initial={editing as any}
-          onSaved={() => { setEditingId(null); refetch(); }}
-        />
-      </div>
-    );
-  }
-
-  const handleValidateVotes = async () => {
-    setValidating(true);
-    setValidationProgress("Iniciando validação...");
-    try {
-      const results = await validateAllVotes((cur, total, nome) => {
-        setValidationProgress(`${cur}/${total} — ${nome}`);
-      });
-      if (results.length === 0) {
-        toast({ title: "✅ Todos os votos estão corretos!" });
-      } else {
-        const updated = results.filter(r => r.updated);
-        toast({
-          title: `🗳️ ${updated.length} registro(s) atualizado(s)`,
-          description: updated.map(r => `${r.nome}: ${r.votosAntigo} → ${r.votosNovo}`).join(", "),
-        });
-        refetch();
-      }
-    } catch (e: any) {
-      toast({ title: "Erro na validação", description: e.message, variant: "destructive" });
-    } finally {
-      setValidating(false);
-      setValidationProgress("");
-    }
-  };
-
   const runAutoValidateTotals = async () => {
     try {
       const results = await validateAllFinancials();
-
       if (results.length > 0) {
         const fixed = results.filter((r) => r.updated).length;
         const withIssues = results.filter((r) => r.issues.length > 0).length;
@@ -103,7 +60,6 @@ export default function Cadastros() {
         refetch();
       }
     } catch (e: any) {
-      // Evita ruído em tela; mantém rastreável no console para suporte técnico.
       console.error("Erro na validacao automatica de totais:", e?.message || e);
     }
   };
@@ -125,7 +81,6 @@ export default function Cadastros() {
   };
 
   useEffect(() => {
-    // Roda ao entrar na tela e novamente a cada 1 hora.
     runAutoValidateRequiredData();
     runAutoValidateTotals();
     const intervalId = window.setInterval(() => {
@@ -134,6 +89,20 @@ export default function Cadastros() {
     }, 60 * 60 * 1000);
     return () => window.clearInterval(intervalId);
   }, []);
+
+  if (editing) {
+    return (
+      <div className="space-y-4">
+        <button onClick={() => setEditingId(null)} className="flex items-center gap-1 text-sm text-primary font-medium">
+          <ArrowLeft size={16} /> Voltar à lista
+        </button>
+        <Cadastro
+          initial={editing as any}
+          onSaved={() => { setEditingId(null); refetch(); }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -150,22 +119,9 @@ export default function Cadastros() {
             <FileDown size={14} />
             Exportar Todas Fichas
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleValidateVotes}
-            disabled={validating}
-            className="text-xs gap-1.5"
-          >
-            {validating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-            {validating ? "Validando..." : "Validar Votos"}
-          </Button>
         </div>
       </div>
 
-      {validating && validationProgress && (
-        <p className="text-xs text-muted-foreground animate-pulse px-1">{validationProgress}</p>
-      )}
       <div className="relative">
         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input
