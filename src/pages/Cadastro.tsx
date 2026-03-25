@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Save, Calculator, PenLine, Trash2 } from "lucide-react";
+import { Save, Calculator, PenLine, Trash2, Loader2 } from "lucide-react";
 import SignaturePad from "@/components/SignaturePad";
 import BuscaTSE from "@/components/BuscaTSE";
 
@@ -302,9 +302,9 @@ export default function Cadastro({ initial, onSaved }: Props) {
       <Button
         onClick={handleSave}
         disabled={saving}
-        className="w-full bg-gradient-to-r from-pink-500 to-rose-400 hover:opacity-90 text-white font-semibold h-12 text-base shadow-lg"
+        className="w-full bg-gradient-to-r from-pink-500 to-rose-400 hover:opacity-90 text-white font-semibold h-12 text-base shadow-lg active:scale-[0.98] transition-transform"
       >
-        <Save size={20} />
+        {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
         {saving ? "Salvando..." : initial?.id ? "Atualizar Ficha" : "Salvar Ficha"}
       </Button>
 
