@@ -58,14 +58,25 @@ export async function validateRequiredData(
     onProgress?.(progress, pending.length, s.nome);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("buscar-candidato-tse", {
-        body: { nome: `${s.nome.split(" ")[0]} ${s.nome.split(" ").slice(-1)[0] || ""}`, ano: 2024 },
-      });
-      if (fnError || !data?.resultados) return;
+      // Try full name first, then first+last name for better matching
+      const searchTerms = [
+        s.nome.trim(),
+        `${s.nome.split(" ")[0]} ${s.nome.split(" ").slice(-1)[0] || ""}`.trim(),
+      ];
 
-      const candidatos = data.resultados as CandidateTse[];
-      const bestMatch =
-        candidatos.find((c) => namesMatch(s.nome, c.nome) || namesMatch(s.nome, c.nomeUrna)) || null;
+      let bestMatch: CandidateTse | null = null;
+
+      for (const term of searchTerms) {
+        if (bestMatch) break;
+        const { data, error: fnError } = await supabase.functions.invoke("buscar-candidato-tse", {
+          body: { nome: term, ano: 2024 },
+        });
+        if (fnError || !data?.resultados) continue;
+
+        const candidatos = data.resultados as CandidateTse[];
+        bestMatch =
+          candidatos.find((c) => namesMatch(s.nome, c.nome) || namesMatch(s.nome, c.nomeUrna)) || null;
+      }
       if (!bestMatch) return;
 
       const votosNovo = votosMap[`${bestMatch.codigoMunicipio}:${bestMatch.id}`] || 0;
