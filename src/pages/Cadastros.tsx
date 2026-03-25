@@ -8,7 +8,6 @@ import { toast } from "@/hooks/use-toast";
 import Cadastro from "./Cadastro";
 import { exportFichasLotePDF, exportSuplentePDF } from "@/lib/exports";
 import { calcTotaisFinanceiros } from "@/lib/finance";
-import { calcTotaisFinanceiros } from "@/lib/finance";
 import { validateAllFinancials } from "@/lib/validateFinancials";
 import { validateRequiredData } from "@/lib/validateRequiredData";
 
