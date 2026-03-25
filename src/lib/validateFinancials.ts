@@ -64,7 +64,7 @@ export async function validateAllFinancials(
       if (value !== null && !isFiniteNumber(value)) {
         issues.push(`${field} invalido`);
       }
-      if (isFiniteNumber(value) && value < 0) {
+      if (isFiniteNumber(value) && (value as number) < 0) {
         issues.push(`${field} negativo`);
       }
     }

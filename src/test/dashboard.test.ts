@@ -15,7 +15,6 @@ interface Suplente {
   plotagem_qtd: number;
   plotagem_valor_unit: number;
   liderancas_valor_unit: number;
-  fiscais_qtd: number;
   fiscais_valor_unit: number;
 }
 
