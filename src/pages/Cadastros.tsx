@@ -48,25 +48,9 @@ export default function Cadastros() {
     }
   };
 
-  if (editing) {
-    return (
-      <div className="space-y-4">
-        <button onClick={() => setEditingId(null)} className="flex items-center gap-1 text-sm text-primary font-medium">
-          <ArrowLeft size={16} /> Voltar à lista
-        </button>
-        <Cadastro
-          initial={editing as any}
-          onSaved={() => { setEditingId(null); refetch(); }}
-        />
-      </div>
-    );
-  }
-
-
   const runAutoValidateTotals = async () => {
     try {
       const results = await validateAllFinancials();
-
       if (results.length > 0) {
         const fixed = results.filter((r) => r.updated).length;
         const withIssues = results.filter((r) => r.issues.length > 0).length;
@@ -77,7 +61,6 @@ export default function Cadastros() {
         refetch();
       }
     } catch (e: any) {
-      // Evita ruído em tela; mantém rastreável no console para suporte técnico.
       console.error("Erro na validacao automatica de totais:", e?.message || e);
     }
   };
@@ -99,7 +82,6 @@ export default function Cadastros() {
   };
 
   useEffect(() => {
-    // Roda ao entrar na tela e novamente a cada 1 hora.
     runAutoValidateRequiredData();
     runAutoValidateTotals();
     const intervalId = window.setInterval(() => {
@@ -108,6 +90,20 @@ export default function Cadastros() {
     }, 60 * 60 * 1000);
     return () => window.clearInterval(intervalId);
   }, []);
+
+  if (editing) {
+    return (
+      <div className="space-y-4">
+        <button onClick={() => setEditingId(null)} className="flex items-center gap-1 text-sm text-primary font-medium">
+          <ArrowLeft size={16} /> Voltar à lista
+        </button>
+        <Cadastro
+          initial={editing as any}
+          onSaved={() => { setEditingId(null); refetch(); }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
