@@ -226,6 +226,7 @@ export default function Login() {
           <p className="text-[10px] text-white/25">
             Pré-candidata a Deputada Estadual — GO 2026
           </p>
+          {/* Synced */}
           <a
             href="https://drafernandasarelli.com.br"
             target="_blank"
