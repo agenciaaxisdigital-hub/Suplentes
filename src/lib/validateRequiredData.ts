@@ -83,15 +83,19 @@ export async function validateRequiredData(
     onProgress?.(progress, pending.length, s.nome);
 
     try {
-      // Try full name first, then first+last name for better matching
+      // Try full name, first+last, and first name only for broader matching
+      const nameParts = s.nome.trim().split(/\s+/);
       const searchTerms = [
         s.nome.trim(),
-        `${s.nome.split(" ")[0]} ${s.nome.split(" ").slice(-1)[0] || ""}`.trim(),
-      ];
+        nameParts.length > 1 ? `${nameParts[0]} ${nameParts[nameParts.length - 1]}` : "",
+        nameParts[0],
+      ].filter((t) => t.length >= 3);
 
+      // Deduplicate search terms
+      const uniqueTerms = [...new Set(searchTerms)];
       let bestMatch: CandidateTse | null = null;
 
-      for (const term of searchTerms) {
+      for (const term of uniqueTerms) {
         if (bestMatch) break;
         const { data, error: fnError } = await supabase.functions.invoke("buscar-candidato-tse", {
           body: { nome: term, ano: 2024 },
@@ -100,7 +104,7 @@ export async function validateRequiredData(
 
         const candidatos = data.resultados as CandidateTse[];
         bestMatch =
-          candidatos.find((c) => namesMatch(s.nome, c.nome) || namesMatch(s.nome, c.nomeUrna)) || null;
+          candidatos.find((c) => fuzzyNamesMatch(s.nome, c.nome, c.nomeUrna)) || null;
       }
       if (!bestMatch) return;
 
