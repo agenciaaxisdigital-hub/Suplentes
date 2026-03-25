@@ -119,8 +119,20 @@ export default function Login() {
         perspectiveOrigin: '50% 40%',
       }}
     >
-      {/* Hyperspeed background */}
-      <Hyperspeed effectOptions={preset} />
+      {/* Hyperspeed background with 3D entrance */}
+      <div
+        className="absolute inset-0"
+        style={{
+          transformStyle: 'preserve-3d',
+          opacity: entered ? 1 : 0,
+          transform: entered
+            ? 'perspective(1200px) translateZ(0) rotateX(0deg) scale(1)'
+            : 'perspective(1200px) translateZ(-600px) rotateX(15deg) scale(1.3)',
+          transition: 'all 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0s',
+        }}
+      >
+        <Hyperspeed effectOptions={preset} />
+      </div>
 
       {/* Subtle vignette for readability */}
       <div className="absolute inset-0 z-[1] pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(7,5,16,0.5) 100%)' }} />
