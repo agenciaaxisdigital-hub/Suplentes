@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { namesMatch } from "@/lib/validateVotes";
+import { namesMatch, normalize } from "@/lib/validateVotes";
 
 type CandidateTse = {
   id: number;
@@ -8,6 +8,31 @@ type CandidateTse = {
   codigoMunicipio: string;
   partido?: string;
 };
+
+/**
+ * Fuzzy match for ballot names (nomes de urna) that may have slight
+ * character differences, e.g. "JOANA DARK" vs "JOANA DARC".
+ */
+function fuzzyNamesMatch(dbName: string, tseName: string, tseNomeUrna: string): boolean {
+  if (namesMatch(dbName, tseName) || namesMatch(dbName, tseNomeUrna)) return true;
+
+  const a = normalize(dbName);
+  const b = normalize(tseNomeUrna);
+  if (!a || !b) return false;
+
+  // Check if names are very similar (allow 1-2 char difference)
+  if (Math.abs(a.length - b.length) <= 2) {
+    let diffs = 0;
+    const maxLen = Math.max(a.length, b.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (a[i] !== b[i]) diffs++;
+      if (diffs > 2) break;
+    }
+    if (diffs <= 2) return true;
+  }
+
+  return false;
+}
 
 export type RequiredDataValidationResult = {
   id: string;
@@ -58,15 +83,19 @@ export async function validateRequiredData(
     onProgress?.(progress, pending.length, s.nome);
 
     try {
-      // Try full name first, then first+last name for better matching
+      // Try full name, first+last, and first name only for broader matching
+      const nameParts = s.nome.trim().split(/\s+/);
       const searchTerms = [
         s.nome.trim(),
-        `${s.nome.split(" ")[0]} ${s.nome.split(" ").slice(-1)[0] || ""}`.trim(),
-      ];
+        nameParts.length > 1 ? `${nameParts[0]} ${nameParts[nameParts.length - 1]}` : "",
+        nameParts[0],
+      ].filter((t) => t.length >= 3);
 
+      // Deduplicate search terms
+      const uniqueTerms = [...new Set(searchTerms)];
       let bestMatch: CandidateTse | null = null;
 
-      for (const term of searchTerms) {
+      for (const term of uniqueTerms) {
         if (bestMatch) break;
         const { data, error: fnError } = await supabase.functions.invoke("buscar-candidato-tse", {
           body: { nome: term, ano: 2024 },
@@ -75,7 +104,7 @@ export async function validateRequiredData(
 
         const candidatos = data.resultados as CandidateTse[];
         bestMatch =
-          candidatos.find((c) => namesMatch(s.nome, c.nome) || namesMatch(s.nome, c.nomeUrna)) || null;
+          candidatos.find((c) => fuzzyNamesMatch(s.nome, c.nome, c.nomeUrna)) || null;
       }
       if (!bestMatch) return;
 
