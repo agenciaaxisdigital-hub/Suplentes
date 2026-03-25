@@ -114,7 +114,6 @@ export default function Login() {
                   alt="Dra. Fernanda Sarelli"
                   className="w-full h-full object-cover"
                   loading="eager"
-                  fetchPriority="high"
                 />
               </div>
             </div>
