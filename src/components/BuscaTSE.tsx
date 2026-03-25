@@ -453,7 +453,7 @@ export default function BuscaTSE({ onSelect }: Props) {
               <ChevronDown size={12} className="shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[300px] p-0" align="start">
+          <PopoverContent className="w-[calc(100vw-2rem)] max-w-[300px] p-0" align="start">
             <Command>
               <CommandInput placeholder="Buscar cidade..." />
               <CommandList>
@@ -527,15 +527,17 @@ export default function BuscaTSE({ onSelect }: Props) {
       )}
 
       {showResults && results.length > 0 && (
-        <div className="absolute z-50 left-0 right-0 top-full mt-1 max-h-64 overflow-y-auto rounded-xl border border-border bg-popover shadow-lg">
-          <div className="px-3 py-1.5 border-b border-border">
+        <div className="absolute z-50 left-0 right-0 top-full mt-1 max-h-[50vh] overflow-y-auto overscroll-y-contain rounded-xl border border-border bg-popover shadow-lg"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          <div className="px-3 py-1.5 border-b border-border sticky top-0 bg-popover z-10">
             <p className="text-[11px] text-muted-foreground">{results.length} resultado(s)</p>
           </div>
           {results.map((c) => (
             <button
               key={`${c.id}-${c.municipio}`}
               onClick={() => handleSelect(c)}
-              className="w-full text-left px-3 py-2.5 hover:bg-accent/50 transition-colors border-b border-border/50 last:border-0"
+              className="w-full text-left px-3 py-3 active:bg-accent/70 hover:bg-accent/50 transition-colors border-b border-border/50 last:border-0"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
