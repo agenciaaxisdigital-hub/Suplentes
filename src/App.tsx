@@ -20,8 +20,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-3 bg-muted">
+        <div className="relative">
+          <div className="w-12 h-12 rounded-full border-2 border-primary/20" />
+          <div className="w-12 h-12 rounded-full border-2 border-primary border-t-transparent animate-spin absolute inset-0" />
+        </div>
+        <p className="text-sm text-muted-foreground animate-pulse">Carregando...</p>
       </div>
     );
   }
