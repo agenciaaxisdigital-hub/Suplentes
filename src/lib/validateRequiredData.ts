@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { namesMatch } from "@/lib/validateVotes";
+import { namesMatch, normalize } from "@/lib/validateVotes";
 
 type CandidateTse = {
   id: number;
@@ -8,6 +8,31 @@ type CandidateTse = {
   codigoMunicipio: string;
   partido?: string;
 };
+
+/**
+ * Fuzzy match for ballot names (nomes de urna) that may have slight
+ * character differences, e.g. "JOANA DARK" vs "JOANA DARC".
+ */
+function fuzzyNamesMatch(dbName: string, tseName: string, tseNomeUrna: string): boolean {
+  if (namesMatch(dbName, tseName) || namesMatch(dbName, tseNomeUrna)) return true;
+
+  const a = normalize(dbName);
+  const b = normalize(tseNomeUrna);
+  if (!a || !b) return false;
+
+  // Check if names are very similar (allow 1-2 char difference)
+  if (Math.abs(a.length - b.length) <= 2) {
+    let diffs = 0;
+    const maxLen = Math.max(a.length, b.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (a[i] !== b[i]) diffs++;
+      if (diffs > 2) break;
+    }
+    if (diffs <= 2) return true;
+  }
+
+  return false;
+}
 
 export type RequiredDataValidationResult = {
   id: string;
