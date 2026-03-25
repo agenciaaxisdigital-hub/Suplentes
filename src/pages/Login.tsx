@@ -66,11 +66,10 @@ export default function Login() {
   const preset = useMemo(() => hyperspeedPreset, []);
 
   // Trigger entrance animation after mount
-  useState(() => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => setEntered(true));
-    });
-  });
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
