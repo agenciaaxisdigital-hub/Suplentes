@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown, Phone, Users, Eye, Car, UserCheck, RefreshCw, Loader2 } from "lucide-react";
+import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown, Phone, Users, Eye, Car, UserCheck, RefreshCw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Cadastro from "./Cadastro";
 import { exportFichasLotePDF, exportSuplentePDF } from "@/lib/exports";
@@ -14,9 +14,6 @@ import { validateRequiredData } from "@/lib/validateRequiredData";
 
 export default function Cadastros() {
   const [search, setSearch] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [validating, setValidating] = useState(false);
-  const [validationProgress, setValidationProgress] = useState("");
 
   const { data: suplentes, refetch } = useQuery({
     queryKey: ["suplentes"],
@@ -64,30 +61,6 @@ export default function Cadastros() {
     );
   }
 
-  const handleValidateVotes = async () => {
-    setValidating(true);
-    setValidationProgress("Iniciando validação...");
-    try {
-      const results = await validateAllVotes((cur, total, nome) => {
-        setValidationProgress(`${cur}/${total} — ${nome}`);
-      });
-      if (results.length === 0) {
-        toast({ title: "✅ Todos os votos estão corretos!" });
-      } else {
-        const updated = results.filter(r => r.updated);
-        toast({
-          title: `🗳️ ${updated.length} registro(s) atualizado(s)`,
-          description: updated.map(r => `${r.nome}: ${r.votosAntigo} → ${r.votosNovo}`).join(", "),
-        });
-        refetch();
-      }
-    } catch (e: any) {
-      toast({ title: "Erro na validação", description: e.message, variant: "destructive" });
-    } finally {
-      setValidating(false);
-      setValidationProgress("");
-    }
-  };
 
   const runAutoValidateTotals = async () => {
     try {
@@ -150,22 +123,9 @@ export default function Cadastros() {
             <FileDown size={14} />
             Exportar Todas Fichas
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleValidateVotes}
-            disabled={validating}
-            className="text-xs gap-1.5"
-          >
-            {validating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-            {validating ? "Validando..." : "Validar Votos"}
-          </Button>
         </div>
       </div>
 
-      {validating && validationProgress && (
-        <p className="text-xs text-muted-foreground animate-pulse px-1">{validationProgress}</p>
-      )}
       <div className="relative">
         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input
