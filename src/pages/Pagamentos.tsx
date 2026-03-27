@@ -81,7 +81,10 @@ function BaixaCategoryRow({
   const label1 = categoria === "retirada" ? "Valor Mensal (R$)" : "Qtd";
   const label2 = categoria === "retirada" ? "Meses Totais" : "Valor Unit. (R$)";
   
-  // Sugestão padrão de pagemento
+  // Limite máximo = valor da retirada mensal (para retirada) ou total da categoria
+  const limiteMax = categoria === "retirada" ? Number(val1) : total;
+  
+  // Sugestão padrão de pagamento
   const defaultPagamento = categoria === "retirada" ? val1 : total;
   const [valorPago, setValorPago] = useState(defaultPagamento > 0 ? String(defaultPagamento) : "");
 
@@ -90,10 +93,18 @@ function BaixaCategoryRow({
     setValorPago(sug > 0 ? String(sug) : "");
   }, [val1, val2, categoria]);
 
+  // Validação: valor digitado vs total permitido
+  const valorDigitado = parseFloat((valorPago || "0").replace(",", ".")) || 0;
+  const excedeu = valorDigitado > limiteMax && limiteMax > 0;
+
   const handleSave = async () => {
     const v = parseFloat(valorPago.replace(",", "."));
     if (!v || v <= 0) {
       toast({title: "Valor inválido", description: "O valor pago deve ser maior que 0.", variant: "destructive"});
+      return;
+    }
+    if (v > limiteMax && limiteMax > 0) {
+      toast({title: "Valor excede o limite!", description: `O máximo para ${label} é ${fmt(limiteMax)}. Ajuste o valor.`, variant: "destructive"});
       return;
     }
     
@@ -122,7 +133,7 @@ function BaixaCategoryRow({
     // Constrói detalhamento
     let obsFinal = "";
     if (categoria !== "retirada") {
-       obsFinal += `Qtd no momento da baixa: ${val1} | Valor un.: ${fmt(val2)}`;
+       obsFinal += `Qtd: ${val1} | Valor un.: ${fmt(val2)}`;
     }
 
     const { error } = await supabase.from("pagamentos").insert({
@@ -137,7 +148,7 @@ function BaixaCategoryRow({
     if (error || errorUpdate) {
        toast({ title: "Erro ao registrar", description: error?.message, variant: "destructive" });
     } else {
-       toast({ title: "Registrado com sucesso!" });
+       toast({ title: "✅ Pagamento registrado!", description: `${label}: ${fmt(v)}` });
        qc.invalidateQueries({ queryKey: ["pagamentos"]});
        qc.invalidateQueries({ queryKey: ["suplentes"]});
        setRegistrado(true);
@@ -148,10 +159,10 @@ function BaixaCategoryRow({
   if (categoria === "outro") return null;
 
   return (
-    <div className="bg-muted/30 rounded-xl p-3 space-y-3 shadow-sm border border-border mt-3">
+    <div className={`rounded-xl p-3 space-y-3 shadow-sm border mt-3 transition-all ${registrado ? 'bg-green-500/10 border-green-500/40' : 'bg-muted/30 border-border'}`}>
       <div className="flex justify-between items-center text-sm">
         <span className="font-semibold text-foreground">{label}</span>
-        <span className="font-bold text-primary">{fmt(total)}</span>
+        <span className="font-bold text-primary">Total: {fmt(total)}</span>
       </div>
       
       <div className="grid grid-cols-2 gap-2">
@@ -165,17 +176,29 @@ function BaixaCategoryRow({
         </div>
       </div>
       
-      <div className="pt-3 border-t border-border grid grid-cols-[1fr_auto] gap-3 items-end">
-        <div className="space-y-1">
-          <Label className="text-[10px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1">
-             <Wallet size={10} className="text-secondary" /> Valor Pago (R$)
-          </Label>
-          <Input type="number" inputMode="decimal" value={valorPago} onChange={e => setValorPago(e.target.value)} className="h-9 w-full bg-card font-bold border-green-500/50 shadow-sm focus-visible:ring-green-500" placeholder="0,00" />
+      <div className="pt-3 border-t border-border space-y-2">
+        <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
+          <div className="space-y-1">
+            <Label className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${excedeu ? 'text-destructive' : 'text-foreground'}`}>
+               <Wallet size={10} /> Valor Pago (R$) {limiteMax > 0 && <span className="font-normal text-muted-foreground">— máx: {fmt(limiteMax)}</span>}
+            </Label>
+            <Input 
+              type="number" inputMode="decimal" value={valorPago} 
+              onChange={e => setValorPago(e.target.value)} 
+              className={`h-9 w-full bg-card font-bold shadow-sm ${excedeu ? 'border-destructive text-destructive focus-visible:ring-destructive' : 'border-green-500/50 focus-visible:ring-green-500'}`} 
+              placeholder="0,00" 
+            />
+          </div>
+          <Button onClick={handleSave} disabled={saving || !val1 || excedeu} size="sm" className={`h-9 font-semibold text-xs shadow-md ${registrado ? 'bg-green-600 hover:bg-green-600' : 'bg-gradient-to-r from-pink-500 to-rose-400 hover:opacity-90'}`}>
+            {saving ? <Loader2 size={14} className="animate-spin mr-1" /> : registrado ? <CheckCircle2 size={14} className="mr-1" /> : <Save size={14} className="mr-1" />} 
+            {registrado ? "Salvo ✓" : "Registrar"}
+          </Button>
         </div>
-        <Button onClick={handleSave} disabled={saving || !val1} size="sm" className={`h-9 font-semibold text-xs shadow-md ${registrado ? 'bg-green-600 hover:bg-green-600' : 'bg-gradient-to-r from-pink-500 to-rose-400 hover:opacity-90'}`}>
-          {saving ? <Loader2 size={14} className="animate-spin mr-1" /> : registrado ? <CheckCircle2 size={14} className="mr-1" /> : <Save size={14} className="mr-1" />} 
-          {registrado ? "Salvo ✓" : "Registrar"}
-        </Button>
+        {excedeu && (
+          <p className="text-[10px] text-destructive font-semibold animate-pulse">
+            ⚠️ O valor digitado ({fmt(valorDigitado)}) excede o limite de {fmt(limiteMax)} para {label}.
+          </p>
+        )}
       </div>
     </div>
   )
