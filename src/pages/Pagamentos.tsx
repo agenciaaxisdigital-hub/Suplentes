@@ -427,18 +427,22 @@ export default function Pagamentos() {
       if (error) throw error;
       return data as unknown as Suplente[];
     },
+    staleTime: 1000 * 60 * 5, // 5 minutos de cache - deixa instantâneo
   });
 
   const { data: pagamentos, isLoading: loadingPag } = useQuery({
-    queryKey: ["pagamentos"],
+    queryKey: ["pagamentos", mes, ano],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("pagamentos")
         .select("*")
+        .eq("mes", mes)
+        .eq("ano", ano)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as Pagamento[];
     },
+    staleTime: 1000 * 60 * 5, // 5 minutos de cache
   });
 
   const isLoading = loadingSuplentes || loadingPag;
