@@ -11,7 +11,7 @@ import { CardSkeletonList } from "@/components/CardSkeleton";
 import { ChevronDown, ChevronUp, Plus, Trash2, X, Loader2, Wallet, ChevronLeft, ChevronRight, Calculator, Save, Pencil, Search, CheckCircle2 } from "lucide-react";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 
-const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const CATEGORIAS: Record<string, string> = {
   retirada: "Retirada Mensal",
   plotagem: "Plotagem",
@@ -100,11 +100,11 @@ function BaixaCategoryRow({
   const handleSave = async () => {
     const v = parseFloat(valorPago.replace(",", "."));
     if (!v || v <= 0) {
-      toast({title: "Valor inválido", description: "O valor pago deve ser maior que 0.", variant: "destructive"});
+      toast({title: "Valor inválido!", description: "Você deve digitar um valor maior que zero para registrar o pagamento.", variant: "destructive"});
       return;
     }
     if (v > limiteMax && limiteMax > 0) {
-      toast({title: "Valor excede o limite!", description: `O máximo para ${label} é ${fmt(limiteMax)}. Ajuste o valor.`, variant: "destructive"});
+      toast({title: "Valor excede o limite!", description: `O valor digitado (${fmt(v)}) é maior que o permitido (${fmt(limiteMax)}) para ${label}.`, variant: "destructive"});
       return;
     }
     
@@ -177,27 +177,66 @@ function BaixaCategoryRow({
       </div>
       
       <div className="pt-3 border-t border-border space-y-2">
-        <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
-          <div className="space-y-1">
-            <Label className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${excedeu ? 'text-destructive' : 'text-foreground'}`}>
-               <Wallet size={10} /> Valor Pago (R$) {limiteMax > 0 && <span className="font-normal text-muted-foreground">— máx: {fmt(limiteMax)}</span>}
-            </Label>
+        <Label className={`text-[11px] font-bold uppercase tracking-wider flex items-center justify-between ${excedeu ? 'text-destructive' : 'text-foreground'}`}>
+           <span className="flex items-center gap-1"><Wallet size={12} /> Valor a Pagar Agora</span>
+           {limiteMax > 0 && <span className="font-normal text-muted-foreground">Limite: {fmt(limiteMax)}</span>}
+        </Label>
+        
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">R$</span>
             <Input 
-              type="number" inputMode="decimal" value={valorPago} 
+              type="number" 
+              inputMode="decimal" 
+              value={valorPago} 
               onChange={e => setValorPago(e.target.value)} 
-              className={`h-9 w-full bg-card font-bold shadow-sm ${excedeu ? 'border-destructive text-destructive focus-visible:ring-destructive' : 'border-green-500/50 focus-visible:ring-green-500'}`} 
+              className={`h-11 w-full pl-8 bg-card text-lg font-bold shadow-sm ${excedeu ? 'border-destructive text-destructive focus-visible:ring-destructive' : 'border-green-500/50 focus-visible:ring-green-500'}`} 
               placeholder="0,00" 
             />
           </div>
-          <Button onClick={handleSave} disabled={saving || !val1 || excedeu} size="sm" className={`h-9 font-semibold text-xs shadow-md ${registrado ? 'bg-green-600 hover:bg-green-600' : 'bg-gradient-to-r from-pink-500 to-rose-400 hover:opacity-90'}`}>
-            {saving ? <Loader2 size={14} className="animate-spin mr-1" /> : registrado ? <CheckCircle2 size={14} className="mr-1" /> : <Save size={14} className="mr-1" />} 
-            {registrado ? "Salvo ✓" : "Registrar"}
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-11 px-3 border-dashed border-primary/50 text-xs font-bold text-primary hover:bg-primary/5 hover:border-primary shrink-0 flex flex-col items-center justify-center leading-none"
+            onClick={() => setValorPago(String(limiteMax))}
+            title="Preencher valor total planejado"
+          >
+            <span className="text-[10px] opacity-70">VALOR</span>
+            <span>TOTAL</span>
           </Button>
         </div>
+
+        <Button 
+          onClick={handleSave} 
+          disabled={saving || !val1 || excedeu || !valorPago} 
+          className={`w-full h-11 font-bold text-sm shadow-lg transition-all active:scale-[0.98] ${registrado ? 'bg-green-600 hover:bg-green-600' : 'bg-gradient-to-r from-pink-500 to-rose-400 hover:opacity-95'}`}
+        >
+          {saving ? (
+            <div className="flex items-center gap-2">
+              <Loader2 size={18} className="animate-spin" />
+              <span>Salvando no Banco...</span>
+            </div>
+          ) : registrado ? (
+            <div className="flex items-center gap-2">
+              <CheckCircle2 size={18} />
+              <span>PAGAMENTO REGISTRADO!</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Save size={18} />
+              <span>SALVAR PAGAMENTO</span>
+            </div>
+          )}
+        </Button>
+
         {excedeu && (
-          <p className="text-[10px] text-destructive font-semibold animate-pulse">
-            ⚠️ O valor digitado ({fmt(valorDigitado)}) excede o limite de {fmt(limiteMax)} para {label}.
-          </p>
+          <div className="bg-destructive/10 border border-destructive/20 p-2 rounded-lg animate-pulse">
+            <p className="text-[11px] text-destructive font-bold text-center">
+              ❌ ERRO: O valor ({fmt(valorDigitado)}) é maior que o planejado ({fmt(limiteMax)}). 
+              Abaixe o valor para salvar.
+            </p>
+          </div>
         )}
       </div>
     </div>
@@ -411,16 +450,20 @@ function SuplenteCard({
       </div>
 
       {/* Barra de progresso */}
-      <div className="px-3 py-2 border-t border-border/50 bg-muted/20">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] text-muted-foreground font-medium">{pct.toFixed(0)}% pago (Total)</span>
-          <span className="text-[10px] text-muted-foreground font-medium">{pagamentosDoMes.length} pagto(s) este mês</span>
+      <div className="px-3 py-3 border-t border-border/50 bg-muted/20">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight italic">Status de Pagamento da Campanha</span>
+          <span className="text-[11px] font-bold text-primary">{pct.toFixed(0)}% Pago</span>
         </div>
-        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+        <div className="h-2.5 bg-muted rounded-full overflow-hidden shadow-inner border border-border/20">
           <div
-            className="h-full bg-primary rounded-full transition-all"
+            className="h-full bg-gradient-to-r from-pink-500 to-rose-400 rounded-full transition-all duration-700"
             style={{ width: `${pct}%` }}
           />
+        </div>
+        <div className="flex justify-between mt-1">
+           <span className="text-[9px] text-muted-foreground/70 uppercase">{fmt(totalPagoGlobal)} pagos</span>
+           <span className="text-[9px] text-muted-foreground/70 uppercase">Faltam {fmt(saldo)}</span>
         </div>
       </div>
 
