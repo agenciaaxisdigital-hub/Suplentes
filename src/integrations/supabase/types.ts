@@ -80,6 +80,47 @@ export type Database = {
         }
         Relationships: []
       }
+      pagamentos: {
+        Row: {
+          id: string
+          suplente_id: string
+          mes: number
+          ano: number
+          categoria: string
+          valor: number
+          observacao: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          suplente_id: string
+          mes: number
+          ano: number
+          categoria: string
+          valor: number
+          observacao?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          suplente_id?: string
+          mes?: number
+          ano?: number
+          categoria?: string
+          valor?: number
+          observacao?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_suplente_id_fkey"
+            columns: ["suplente_id"]
+            isOneToOne: false
+            referencedRelation: "suplentes"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       suplentes: {
         Row: {
           ano_eleicao: number | null

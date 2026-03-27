@@ -21,13 +21,16 @@ export default function Dashboard() {
     },
   });
 
+  const normalizeStr = (str: string) =>
+    str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
   const list = useMemo(() => {
     const all = suplentes ?? [];
     if (!search.trim()) return all;
-    const q = search.toLowerCase();
+    const q = normalizeStr(search);
     return all.filter((s: any) =>
-      s.nome?.toLowerCase().includes(q) ||
-      s.regiao_atuacao?.toLowerCase().includes(q)
+      normalizeStr(s.nome || "").includes(q) ||
+      normalizeStr(s.regiao_atuacao || "").includes(q)
     );
   }, [suplentes, search]);
 
@@ -40,6 +43,7 @@ export default function Dashboard() {
   const totalCampanha = list.reduce((a: number, s: any) => a + calcTotaisFinanceiros(s).totalFinal, 0);
   const totalPlotagem = list.reduce((a: number, s: any) => a + (s.plotagem_qtd || 0), 0);
   const totalRetirada = list.reduce((a: number, s: any) => a + ((s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0)), 0);
+  const totalRetiradaMensal = list.reduce((a: number, s: any) => a + (s.retirada_mensal_valor || 0), 0);
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const fmtN = (v: number) => v.toLocaleString("pt-BR");
@@ -142,8 +146,12 @@ export default function Dashboard() {
                 <span className="text-sm text-muted-foreground">Total Pessoas de Campo</span>
                 <span className="text-sm font-semibold text-foreground">{fmtN(totalPessoas)}</span>
               </div>
+              <div className="flex justify-between items-center py-1 border-b border-border/50">
+                <span className="text-sm text-muted-foreground">Valor das Retiradas por Mês</span>
+                <span className="text-sm font-semibold text-foreground">{fmt(totalRetiradaMensal)}</span>
+              </div>
               <div className="flex justify-between items-center py-1">
-                <span className="text-sm text-muted-foreground">Total Retirada Mensal</span>
+                <span className="text-sm text-muted-foreground">Valor Total das Retiradas</span>
                 <span className="text-sm font-semibold text-foreground">{fmt(totalRetirada)}</span>
               </div>
             </div>

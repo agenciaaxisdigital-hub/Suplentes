@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Usuarios from "./pages/Usuarios";
+import Pagamentos from "./pages/Pagamentos";
 
 const queryClient = new QueryClient();
 
@@ -35,7 +36,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <div style={{ minHeight: '100dvh', background: '#070510' }} />;
   if (user) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
@@ -63,6 +64,7 @@ const App = () => {
             <Route path="/cadastros" element={<ProtectedRoute><Cadastros /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/usuarios" element={<ProtectedRoute><Usuarios /></ProtectedRoute>} />
+            <Route path="/pagamentos" element={<ProtectedRoute><Pagamentos /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

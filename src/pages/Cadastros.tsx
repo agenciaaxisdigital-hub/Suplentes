@@ -30,10 +30,16 @@ export default function Cadastros() {
     },
   });
 
-  const filtered = suplentes?.filter((s: any) =>
-    s.nome?.toLowerCase().includes(search.toLowerCase()) ||
-    s.regiao_atuacao?.toLowerCase().includes(search.toLowerCase())
-  ) ?? [];
+  const normalizeStr = (str: string) =>
+    str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+  const filtered = suplentes?.filter((s: any) => {
+    if (!search.trim()) return true;
+    const term = normalizeStr(search);
+    const nome = normalizeStr(s.nome || "");
+    const regiao = normalizeStr(s.regiao_atuacao || "");
+    return nome.includes(term) || regiao.includes(term);
+  }) ?? [];
 
   const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 

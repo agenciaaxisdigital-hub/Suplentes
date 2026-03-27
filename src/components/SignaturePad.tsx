@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { X, Check, Eraser } from "lucide-react";
 
@@ -14,22 +15,15 @@ export default function SignaturePad({ open, onClose, onSave, initial }: Props) 
   const [drawing, setDrawing] = useState(false);
   const [hasContent, setHasContent] = useState(false);
 
-  // Lock body scroll and force viewport to top when open (PWA fix)
+  // Lock scroll when open
   useEffect(() => {
     if (open) {
-      window.scrollTo(0, 0);
       document.body.style.overflow = "hidden";
-      document.body.style.position = "fixed";
-      document.body.style.width = "100%";
     } else {
       document.body.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.width = "";
     }
     return () => {
       document.body.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.width = "";
     };
   }, [open]);
 
@@ -114,7 +108,10 @@ export default function SignaturePad({ open, onClose, onSave, initial }: Props) 
 
   if (!open) return null;
 
-  return (
+  // Portal garante que o modal seja renderizado direto no body,
+  // fora de qualquer ancestor com transform (PageTransition), evitando
+  // o bug onde position:fixed fica preso no contexto do elemento transformado.
+  return createPortal(
     <div className="fixed inset-0 z-[80] flex flex-col bg-background" style={{ height: "100dvh" }}>
       {/* Header - fixed height */}
       <div className="flex items-center justify-between border-b border-border bg-card px-4 py-3 shrink-0">
@@ -157,6 +154,7 @@ export default function SignaturePad({ open, onClose, onSave, initial }: Props) 
           Salvar assinatura
         </Button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
