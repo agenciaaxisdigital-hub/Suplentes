@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { PageTransition } from "@/components/PageTransition";
 import { CardSkeletonList } from "@/components/CardSkeleton";
-import { ChevronDown, ChevronUp, Plus, Trash2, X, Loader2, Wallet, ChevronLeft, ChevronRight, Calculator, Save, Pencil } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Trash2, X, Loader2, Wallet, ChevronLeft, ChevronRight, Calculator, Save, Pencil, Search, CheckCircle2 } from "lucide-react";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -61,6 +61,7 @@ function BaixaCategoryRow({
 }) {
   const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
+  const [registrado, setRegistrado] = useState(false);
   
   const [val1, setVal1] = useState(
     categoria === "retirada" ? suplente.retirada_mensal_valor :
@@ -139,7 +140,8 @@ function BaixaCategoryRow({
        toast({ title: "Registrado com sucesso!" });
        qc.invalidateQueries({ queryKey: ["pagamentos"]});
        qc.invalidateQueries({ queryKey: ["suplentes"]});
-       onSaved();
+       setRegistrado(true);
+       setTimeout(() => setRegistrado(false), 3000);
     }
   }
 
@@ -170,9 +172,9 @@ function BaixaCategoryRow({
           </Label>
           <Input type="number" inputMode="decimal" value={valorPago} onChange={e => setValorPago(e.target.value)} className="h-9 w-full bg-card font-bold border-green-500/50 shadow-sm focus-visible:ring-green-500" placeholder="0,00" />
         </div>
-        <Button onClick={handleSave} disabled={saving || !val1} size="sm" className="h-9 bg-gradient-to-r from-pink-500 to-rose-400 hover:opacity-90 font-semibold text-xs shadow-md">
-          {saving ? <Loader2 size={14} className="animate-spin mr-1" /> : <Save size={14} className="mr-1" />} 
-          Registrar
+        <Button onClick={handleSave} disabled={saving || !val1} size="sm" className={`h-9 font-semibold text-xs shadow-md ${registrado ? 'bg-green-600 hover:bg-green-600' : 'bg-gradient-to-r from-pink-500 to-rose-400 hover:opacity-90'}`}>
+          {saving ? <Loader2 size={14} className="animate-spin mr-1" /> : registrado ? <CheckCircle2 size={14} className="mr-1" /> : <Save size={14} className="mr-1" />} 
+          {registrado ? "Salvo ✓" : "Registrar"}
         </Button>
       </div>
     </div>
@@ -427,6 +429,7 @@ export default function Pagamentos() {
   const now = new Date();
   const [mes, setMes] = useState(now.getMonth() + 1);
   const [ano, setAno] = useState(now.getFullYear());
+  const [busca, setBusca] = useState("");
 
   const { data: suplentes, isLoading: loadingSuplentes } = useQuery({
     queryKey: ["suplentes"],
@@ -470,6 +473,15 @@ export default function Pagamentos() {
     (a, s) => a + calcTotaisFinanceiros(s).totalFinal, 0
   );
   const totalPagoGeral = (pagamentos || []).reduce((a, p) => a + (p.valor || 0), 0);
+  const pctGeral = totalCampanhaGeral > 0 ? Math.min(100, (totalPagoGeral / totalCampanhaGeral) * 100) : 0;
+
+  // Filtro de busca
+  const suplantesFiltrados = (suplentes || []).filter(s => {
+    if (!busca.trim()) return true;
+    return s.nome.toLowerCase().includes(busca.toLowerCase()) ||
+           (s.regiao_atuacao || "").toLowerCase().includes(busca.toLowerCase()) ||
+           (s.partido || "").toLowerCase().includes(busca.toLowerCase());
+  });
 
   return (
     <PageTransition>
@@ -507,7 +519,16 @@ export default function Pagamentos() {
               <p className="text-white font-bold text-lg">{fmt(totalCampanhaGeral)}</p>
             </div>
             <div className="col-span-2 pt-2 border-t border-white/20">
-              <p className="text-white/70 text-[10px] uppercase tracking-wider">Pago Apenas Neste Mês ({MESES[mes - 1]})</p>
+              <div className="flex justify-between items-center mb-1">
+                <p className="text-white/70 text-[10px] uppercase tracking-wider">Progresso Total</p>
+                <p className="text-white font-bold text-sm">{pctGeral.toFixed(0)}%</p>
+              </div>
+              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${pctGeral}%` }} />
+              </div>
+            </div>
+            <div className="col-span-2 pt-2 border-t border-white/20">
+              <p className="text-white/70 text-[10px] uppercase tracking-wider">Pago Neste Mês ({MESES[mes - 1]})</p>
               <p className="text-white font-bold text-lg">{fmt(totalPagoMes)}</p>
             </div>
           </div>
@@ -518,10 +539,26 @@ export default function Pagamentos() {
           <CardSkeletonList count={4} />
         ) : (
           <div className="space-y-3">
+            {/* Campo de Pesquisa */}
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Pesquisar suplente por nome, região ou partido..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="pl-9 h-10 bg-card border-border rounded-xl text-sm"
+              />
+              {busca && (
+                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setBusca("")}>
+                  <X size={12} />
+                </Button>
+              )}
+            </div>
+
             <p className="text-xs text-muted-foreground">
-              {(suplentes || []).length} suplente(s) — {pagMes.length} pagamento(s) registrado(s) no mês
+              {suplantesFiltrados.length} de {(suplentes || []).length} suplente(s) — {pagMes.length} pagamento(s) registrado(s) no mês
             </p>
-            {(suplentes || []).map((s) => (
+            {suplantesFiltrados.map((s) => (
               <SuplenteCard
                 key={s.id}
                 suplente={s}
@@ -530,6 +567,11 @@ export default function Pagamentos() {
                 ano={ano}
               />
             ))}
+            {suplantesFiltrados.length === 0 && busca && (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                Nenhum suplente encontrado para "{busca}"
+              </div>
+            )}
           </div>
         )}
       </div>
