@@ -306,14 +306,20 @@ function SuplenteCard({
   const qc = useQueryClient();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const meusPagamentos = pagamentos.filter(
+  const pagamentosDoMes = pagamentos.filter(
     (p) => p.suplente_id === suplente.id && p.mes === mes && p.ano === ano
   );
 
-  const totalPago = meusPagamentos.reduce((a, p) => a + (p.valor || 0), 0);
+  const pagamentosGlobais = pagamentos.filter((p) => p.suplente_id === suplente.id);
+
+  // Totais Gerais
+  const totalPagoGlobal = pagamentosGlobais.reduce((a, p) => a + (p.valor || 0), 0);
   const totalCampanha = calcTotaisFinanceiros(suplente).totalFinal;
-  const saldo = totalCampanha - totalPago;
-  const pct = totalCampanha > 0 ? Math.min(100, (totalPago / totalCampanha) * 100) : 0;
+  const saldo = totalCampanha - totalPagoGlobal;
+  const pct = totalCampanha > 0 ? Math.min(100, (totalPagoGlobal / totalCampanha) * 100) : 0;
+  
+  // Totais do mês para interface
+  const totalPagoNoMes = pagamentosDoMes.reduce((a, p) => a + (p.valor || 0), 0);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Excluir este pagamento?")) return;
@@ -360,17 +366,21 @@ function SuplenteCard({
       )}
 
       {/* Totais */}
-      <div className="grid grid-cols-3 border-t border-border divide-x divide-border bg-muted/40">
+      <div className="grid grid-cols-4 border-t border-border divide-x divide-border bg-muted/40">
         <div className="py-2 px-1 text-center">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Total</p>
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Campanha</p>
           <p className="text-xs font-bold text-foreground">{fmt(totalCampanha)}</p>
         </div>
-        <div className="py-2 px-1 text-center">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Pago</p>
-          <p className="text-xs font-bold text-green-500">{fmt(totalPago)}</p>
+        <div className="py-2 px-1 text-center bg-green-500/10">
+          <p className="text-[9px] uppercase tracking-wider text-green-600 dark:text-green-500 font-medium">+ Este Mês</p>
+          <p className="text-xs font-bold text-green-600 dark:text-green-500">{fmt(totalPagoNoMes)}</p>
         </div>
         <div className="py-2 px-1 text-center">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Saldo</p>
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Pago Geral</p>
+          <p className="text-xs font-bold text-foreground">{fmt(totalPagoGlobal)}</p>
+        </div>
+        <div className="py-2 px-1 text-center">
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Saldo a Pagar</p>
           <p className={`text-xs font-bold ${saldo > 0 ? "text-destructive" : "text-green-500"}`}>{fmt(saldo)}</p>
         </div>
       </div>
@@ -378,8 +388,8 @@ function SuplenteCard({
       {/* Barra de progresso */}
       <div className="px-3 py-2 border-t border-border/50 bg-muted/20">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] text-muted-foreground font-medium">{pct.toFixed(0)}% pago</span>
-          <span className="text-[10px] text-muted-foreground font-medium">{meusPagamentos.length} pagamento(s)</span>
+          <span className="text-[10px] text-muted-foreground font-medium">{pct.toFixed(0)}% pago (Total)</span>
+          <span className="text-[10px] text-muted-foreground font-medium">{pagamentosDoMes.length} pagto(s) este mês</span>
         </div>
         <div className="h-1.5 bg-muted rounded-full overflow-hidden">
           <div
@@ -390,7 +400,7 @@ function SuplenteCard({
       </div>
 
       {/* Histórico de pagamentos */}
-      {meusPagamentos.length > 0 && (
+      {pagamentosDoMes.length > 0 && (
         <>
           <button
             className="w-full flex items-center justify-between px-3 py-2 border-t border-border text-xs text-muted-foreground hover:bg-muted/30 transition-colors"
@@ -402,7 +412,7 @@ function SuplenteCard({
 
           {expanded && (
             <div className="border-t border-border/50 divide-y divide-border/50 bg-muted/10">
-              {meusPagamentos.map((p) => (
+              {pagamentosDoMes.map((p) => (
                 <PagamentoItem key={p.id} p={p} onDelete={handleDelete} />
               ))}
             </div>
@@ -431,13 +441,11 @@ export default function Pagamentos() {
   });
 
   const { data: pagamentos, isLoading: loadingPag } = useQuery({
-    queryKey: ["pagamentos", mes, ano],
+    queryKey: ["pagamentos"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("pagamentos")
         .select("*")
-        .eq("mes", mes)
-        .eq("ano", ano)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as Pagamento[];
@@ -461,6 +469,7 @@ export default function Pagamentos() {
   const totalCampanhaGeral = (suplentes || []).reduce(
     (a, s) => a + calcTotaisFinanceiros(s).totalFinal, 0
   );
+  const totalPagoGeral = (pagamentos || []).reduce((a, p) => a + (p.valor || 0), 0);
 
   return (
     <PageTransition>
@@ -483,19 +492,23 @@ export default function Pagamentos() {
           </div>
         </div>
 
-        {/* Resumo do mês */}
+        {/* Resumo do mês e Geral */}
         <div className="bg-gradient-to-r from-pink-500 to-rose-400 rounded-2xl p-4 shadow-lg">
-          <div className="flex items-center gap-2 text-white/80 text-xs mb-2">
-            <Wallet size={14} /> Resumo {MESES[mes - 1]}/{ano}
+          <div className="flex items-center gap-2 text-white/80 text-xs mb-3">
+            <Wallet size={14} /> Resumo Geral e {MESES[mes - 1]}/{ano}
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-y-3 gap-x-3">
             <div>
-              <p className="text-white/70 text-[10px] uppercase tracking-wider">Total Pago no Mês</p>
-              <p className="text-white font-bold text-lg">{fmt(totalPagoMes)}</p>
+              <p className="text-white/70 text-[10px] uppercase tracking-wider">Total Pago (Global)</p>
+              <p className="text-white font-bold text-lg">{fmt(totalPagoGeral)}</p>
             </div>
             <div>
               <p className="text-white/70 text-[10px] uppercase tracking-wider">Total Campanha</p>
               <p className="text-white font-bold text-lg">{fmt(totalCampanhaGeral)}</p>
+            </div>
+            <div className="col-span-2 pt-2 border-t border-white/20">
+              <p className="text-white/70 text-[10px] uppercase tracking-wider">Pago Apenas Neste Mês ({MESES[mes - 1]})</p>
+              <p className="text-white font-bold text-lg">{fmt(totalPagoMes)}</p>
             </div>
           </div>
         </div>
