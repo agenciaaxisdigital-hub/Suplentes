@@ -14,6 +14,25 @@ export default function SignaturePad({ open, onClose, onSave, initial }: Props) 
   const [drawing, setDrawing] = useState(false);
   const [hasContent, setHasContent] = useState(false);
 
+  // Lock body scroll and force viewport to top when open (PWA fix)
+  useEffect(() => {
+    if (open) {
+      window.scrollTo(0, 0);
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
+    } else {
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const canvas = canvasRef.current;
