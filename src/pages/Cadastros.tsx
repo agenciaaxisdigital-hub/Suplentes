@@ -37,8 +37,10 @@ export default function Cadastros() {
     if (!search.trim()) return true;
     const term = normalizeStr(search);
     const nome = normalizeStr(s.nome || "");
+    const bairro = normalizeStr(s.bairro || "");
     const regiao = normalizeStr(s.regiao_atuacao || "");
-    return nome.includes(term) || regiao.includes(term);
+    const urna = (s.numero_urna || "").toLowerCase();
+    return nome.includes(term) || bairro.includes(term) || regiao.includes(term) || urna.includes(term);
   }) ?? [];
 
   const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -139,7 +141,7 @@ export default function Cadastros() {
         <div className="relative">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome ou região..."
+            placeholder="Buscar por nome, bairro, região ou nº urna..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10 bg-card border-border"
@@ -180,12 +182,13 @@ export default function Cadastros() {
                         <div className="min-w-0 flex-1">
                           <p className="font-bold text-foreground text-sm truncate">{s.nome}</p>
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                            {s.regiao_atuacao && (
+                            {s.bairro && (
                               <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                                <MapPin size={10} className="text-primary shrink-0" /> {s.regiao_atuacao}
+                                <MapPin size={10} className="text-primary shrink-0" /> {s.bairro}
                               </span>
                             )}
                             {s.partido && <span className="text-[11px] text-muted-foreground">{s.partido}</span>}
+                            {s.numero_urna && <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">#{s.numero_urna}</span>}
                             {s.situacao && <span className="text-[10px] font-medium uppercase tracking-wider text-primary">{s.situacao}</span>}
                           </div>
                         </div>

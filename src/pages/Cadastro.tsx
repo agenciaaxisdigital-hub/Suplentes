@@ -12,6 +12,8 @@ import BuscaTSE from "@/components/BuscaTSE";
 
 interface FormData {
   nome: string;
+  numero_urna: string;
+  bairro: string;
   regiao_atuacao: string;
   telefone: string;
   cargo_disputado: string;
@@ -34,6 +36,8 @@ interface FormData {
 
 const defaultForm: FormData = {
   nome: "",
+  numero_urna: "",
+  bairro: "",
   regiao_atuacao: "",
   telefone: "",
   cargo_disputado: "Vereador",
@@ -189,13 +193,23 @@ export default function Cadastro({ initial, onSaved }: Props) {
       <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
         <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Dados do Suplente</h2>
 
-        <Field label="Nome" required>
-          <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Nome completo" className="bg-card shadow-sm border-border" />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Nome" required>
+            <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Nome completo" className="bg-card shadow-sm border-border" />
+          </Field>
+          <Field label="Nº de Urna">
+            <Input value={form.numero_urna} onChange={(e) => set("numero_urna", e.target.value)} placeholder="Ex: 12345" className="bg-card shadow-sm border-border" inputMode="numeric" />
+          </Field>
+        </div>
 
-        <Field label="Região de Atuação">
-          <Input value={form.regiao_atuacao} onChange={(e) => set("regiao_atuacao", e.target.value)} placeholder="Ex: Garavelo" className="bg-card shadow-sm border-border" />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Bairro">
+            <Input value={form.bairro} onChange={(e) => set("bairro", e.target.value)} placeholder="Ex: Garavelo" className="bg-card shadow-sm border-border" />
+          </Field>
+          <Field label="Região de Atuação">
+            <Input value={form.regiao_atuacao} onChange={(e) => set("regiao_atuacao", e.target.value)} placeholder="Ex: Sul" className="bg-card shadow-sm border-border" />
+          </Field>
+        </div>
 
         <Field label="Telefone">
           <Input value={form.telefone} onChange={(e) => set("telefone", e.target.value)} placeholder="(62) 99999-9999" className="bg-card shadow-sm border-border" />

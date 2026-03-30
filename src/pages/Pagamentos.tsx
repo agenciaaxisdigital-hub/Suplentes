@@ -1,652 +1,610 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { PageTransition } from "@/components/PageTransition";
 import { CardSkeletonList } from "@/components/CardSkeleton";
-import { ChevronDown, ChevronUp, Plus, Trash2, X, Loader2, Wallet, ChevronLeft, ChevronRight, Calculator, Save, Pencil, Search, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  ChevronDown, ChevronUp, Trash2, X, Loader2, Wallet,
+  ChevronLeft, ChevronRight, Save, Search,
+  CheckCircle2, AlertCircle, Users, Briefcase, List, Pencil,
+  TrendingDown, Receipt,
+} from "lucide-react";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 
-const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-const CATEGORIAS: Record<string, string> = {
-  retirada: "Retirada Mensal",
-  plotagem: "Plotagem",
-  liderancas: "Lideranças",
-  fiscais: "Fiscais",
-  outro: "Outro",
-};
+const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+type FiltroAba = "todos" | "suplentes" | "liderancas" | "admin";
 
 type Pagamento = {
   id: string;
-  suplente_id: string;
-  mes: number;
-  ano: number;
-  categoria: string;
-  valor: number;
-  observacao: string | null;
-  created_at: string;
+  suplente_id: string | null; lideranca_id: string | null; admin_id: string | null;
+  tipo_pessoa: string; mes: number; ano: number;
+  categoria: string; valor: number; observacao: string | null; created_at: string;
 };
 
 type Suplente = {
-  id: string;
-  nome: string;
-  regiao_atuacao: string | null;
-  partido: string | null;
-  retirada_mensal_valor: number;
-  retirada_mensal_meses: number;
-  plotagem_qtd: number;
-  plotagem_valor_unit: number;
-  liderancas_qtd: number;
-  liderancas_valor_unit: number;
-  fiscais_qtd: number;
-  fiscais_valor_unit: number;
-  total_campanha: number;
+  id: string; nome: string; regiao_atuacao: string | null; partido: string | null;
+  retirada_mensal_valor: number; retirada_mensal_meses: number;
+  plotagem_qtd: number; plotagem_valor_unit: number;
+  liderancas_qtd: number; liderancas_valor_unit: number;
+  fiscais_qtd: number; fiscais_valor_unit: number; total_campanha: number;
 };
 
-const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+type Lideranca = {
+  id: string; nome: string; regiao: string | null;
+  retirada_mensal_valor: number | null; chave_pix: string | null;
+};
 
-function BaixaCategoryRow({
-  categoria, label, suplente, mes, ano, onSaved
-}: {
-  categoria: keyof typeof CATEGORIAS;
-  label: string;
-  suplente: Suplente;
-  mes: number;
-  ano: number;
-  onSaved: () => void;
-}) {
-  const qc = useQueryClient();
-  const [saving, setSaving] = useState(false);
-  const [registrado, setRegistrado] = useState(false);
-  const [autoSaving, setAutoSaving] = useState(false);
-  const [autoSaved, setAutoSaved] = useState(false);
-  const isFirstRender = useRef(true);
+type AdminPessoa = {
+  id: string; nome: string; whatsapp: string | null; valor_contrato: number | null;
+};
 
-  const [val1, setVal1] = useState(
-    categoria === "retirada" ? suplente.retirada_mensal_valor :
-    categoria === "plotagem" ? suplente.plotagem_qtd :
-    categoria === "liderancas" ? suplente.liderancas_qtd :
-    categoria === "fiscais" ? suplente.fiscais_qtd : 0
+// ─── Barra de progresso ───────────────────────────────────────────────────────
+function Bar({ pago, total, cor = "bg-primary" }: { pago: number; total: number; cor?: string }) {
+  const pct = total > 0 ? Math.min(100, (pago / total) * 100) : 0;
+  return (
+    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+      <div className={`h-full rounded-full transition-all duration-500 ${cor}`} style={{ width: `${pct}%` }} />
+    </div>
   );
+}
 
-  const [val2, setVal2] = useState(
-    categoria === "retirada" ? suplente.retirada_mensal_meses :
-    categoria === "plotagem" ? suplente.plotagem_valor_unit :
-    categoria === "liderancas" ? suplente.liderancas_valor_unit :
-    categoria === "fiscais" ? suplente.fiscais_valor_unit : 0
-  );
+// ─── Ficha financeira completa (apenas suplentes) ─────────────────────────────
+function FichaFinanceira({ suplente, todosPagamentos }: { suplente: Suplente; todosPagamentos: Pagamento[] }) {
+  const pags = todosPagamentos.filter(p => p.suplente_id === suplente.id);
+  const catLabel: Record<string, string> = {
+    retirada: "Retirada Mensal", plotagem: "Plotagem",
+    liderancas: "Lideranças na Campanha", fiscais: "Fiscais no Dia",
+  };
 
-  const total = Number(val1) * Number(val2);
-  const label1 = categoria === "retirada" ? "Valor Mensal (R$)" : "Qtd";
-  const label2 = categoria === "retirada" ? "Meses Totais" : "Valor Unit. (R$)";
+  const categorias = [
+    {
+      key: "retirada",
+      planejado: (suplente.retirada_mensal_valor || 0) * (suplente.retirada_mensal_meses || 0),
+      detalhe: `${fmt(suplente.retirada_mensal_valor || 0)} × ${suplente.retirada_mensal_meses || 0} meses`,
+    },
+    {
+      key: "plotagem",
+      planejado: (suplente.plotagem_qtd || 0) * (suplente.plotagem_valor_unit || 0),
+      detalhe: `${suplente.plotagem_qtd || 0} un. × ${fmt(suplente.plotagem_valor_unit || 0)}`,
+    },
+    {
+      key: "liderancas",
+      planejado: (suplente.liderancas_qtd || 0) * (suplente.liderancas_valor_unit || 0),
+      detalhe: `${suplente.liderancas_qtd || 0} líderes × ${fmt(suplente.liderancas_valor_unit || 0)}`,
+    },
+    {
+      key: "fiscais",
+      planejado: (suplente.fiscais_qtd || 0) * (suplente.fiscais_valor_unit || 0),
+      detalhe: `${suplente.fiscais_qtd || 0} fiscais × ${fmt(suplente.fiscais_valor_unit || 0)}`,
+    },
+  ].filter(c => c.planejado > 0);
 
-  // Limite máximo = valor da retirada mensal (para retirada) ou total da categoria
-  const limiteMax = categoria === "retirada" ? Number(val1) : total;
+  const totalCampanha = calcTotaisFinanceiros(suplente).totalFinal;
+  const totalPago = pags.reduce((a, p) => a + p.valor, 0);
+  const saldo = totalCampanha - totalPago;
 
-  // Sugestão padrão de pagamento
-  const defaultPagamento = categoria === "retirada" ? val1 : total;
-  const [valorPago, setValorPago] = useState(defaultPagamento > 0 ? String(defaultPagamento) : "");
+  // Histórico por mês
+  const historico = pags.reduce<Record<string, { total: number; itens: Pagamento[] }>>((acc, p) => {
+    const key = `${String(p.ano)}-${String(p.mes).padStart(2, "0")}`;
+    if (!acc[key]) acc[key] = { total: 0, itens: [] };
+    acc[key].total += p.valor;
+    acc[key].itens.push(p);
+    return acc;
+  }, {});
 
-  useEffect(() => {
-    const sug = categoria === "retirada" ? val1 : (val1 * val2);
-    setValorPago(sug > 0 ? String(sug) : "");
-  }, [val1, val2, categoria]);
-
-  // Auto-save debounced: salva no banco 800ms após o usuário parar de digitar
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    const updateData: Record<string, number> = {};
-    if (categoria === "retirada") {
-      updateData.retirada_mensal_valor = Number(val1);
-      updateData.retirada_mensal_meses = Number(val2);
-    } else if (categoria === "plotagem") {
-      updateData.plotagem_qtd = Number(val1);
-      updateData.plotagem_valor_unit = Number(val2);
-    } else if (categoria === "liderancas") {
-      updateData.liderancas_qtd = Number(val1);
-      updateData.liderancas_valor_unit = Number(val2);
-    } else if (categoria === "fiscais") {
-      updateData.fiscais_qtd = Number(val1);
-      updateData.fiscais_valor_unit = Number(val2);
-    }
-    const retiradaV = categoria === "retirada" ? Number(val1) * Number(val2) : suplente.retirada_mensal_valor * suplente.retirada_mensal_meses;
-    const plotagemV = categoria === "plotagem" ? Number(val1) * Number(val2) : suplente.plotagem_qtd * suplente.plotagem_valor_unit;
-    const liderancasV = categoria === "liderancas" ? Number(val1) * Number(val2) : suplente.liderancas_qtd * suplente.liderancas_valor_unit;
-    const fiscaisV = categoria === "fiscais" ? Number(val1) * Number(val2) : suplente.fiscais_qtd * suplente.fiscais_valor_unit;
-    updateData.total_campanha = retiradaV + plotagemV + liderancasV + fiscaisV;
-
-    setAutoSaving(true);
-    setAutoSaved(false);
-    const timer = setTimeout(async () => {
-      const { error } = await supabase.from("suplentes").update(updateData).eq("id", suplente.id);
-      setAutoSaving(false);
-      if (!error) {
-        setAutoSaved(true);
-        qc.invalidateQueries({ queryKey: ["suplentes"] });
-        setTimeout(() => setAutoSaved(false), 2000);
-      }
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [val1, val2]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Validação: valor digitado vs total permitido
-  const valorDigitado = parseFloat((valorPago || "0").replace(",", ".")) || 0;
-  const excedeu = valorDigitado > limiteMax && limiteMax > 0;
-
-  const handleSave = async () => {
-    const v = parseFloat(valorPago.replace(",", "."));
-    if (!v || v <= 0) {
-      toast({title: "Valor inválido!", description: "Você deve digitar um valor maior que zero para registrar o pagamento.", variant: "destructive"});
-      return;
-    }
-    if (v > limiteMax && limiteMax > 0) {
-      toast({title: "Valor excede o limite!", description: `O valor digitado (${fmt(v)}) é maior que o permitido (${fmt(limiteMax)}) para ${label}.`, variant: "destructive"});
-      return;
-    }
-    
-    setSaving(true);
-
-    // Constrói detalhamento
-    let obsFinal = "";
-    if (categoria !== "retirada") {
-       obsFinal += `Qtd: ${val1} | Valor un.: ${fmt(val2)}`;
-    }
-
-    const { error } = await supabase.from("pagamentos").insert({
-      suplente_id: suplente.id,
-      mes, ano,
-      categoria,
-      valor: v,
-      observacao: obsFinal || null
-    });
-    
-    setSaving(false);
-    if (error) {
-       toast({ title: "Erro ao registrar", description: error?.message, variant: "destructive" });
-    } else {
-       toast({ title: "✅ Pagamento registrado!", description: `${label}: ${fmt(v)}` });
-       qc.invalidateQueries({ queryKey: ["pagamentos"]});
-       qc.invalidateQueries({ queryKey: ["suplentes"]});
-       setRegistrado(true);
-       setTimeout(() => setRegistrado(false), 3000);
-    }
-  }
-
-  if (categoria === "outro") return null;
+  const historicoOrdenado = Object.entries(historico).sort((a, b) => b[0].localeCompare(a[0]));
 
   return (
-    <div className={`rounded-xl p-3 space-y-3 shadow-sm border mt-3 transition-all ${registrado ? 'bg-green-500/10 border-green-500/40' : 'bg-muted/30 border-border'}`}>
-      <div className="flex justify-between items-center text-sm">
-        <span className="font-semibold text-foreground">{label}</span>
-        <div className="flex items-center gap-2">
-          {autoSaving && (
-            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-              <Loader2 size={10} className="animate-spin" /> salvando...
-            </span>
-          )}
-          {autoSaved && (
-            <span className="text-[10px] text-green-500 flex items-center gap-1">
-              <CheckCircle2 size={10} /> salvo
-            </span>
-          )}
-          <span className="font-bold text-primary">Total: {fmt(total)}</span>
+    <div className="border-t border-border/50 bg-muted/10">
+      {/* Por categoria */}
+      <div className="px-3 pt-3 pb-2">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-2 flex items-center gap-1">
+          <Receipt size={10} /> Discriminação Financeira
+        </p>
+        <div className="space-y-2.5">
+          {categorias.map(c => {
+            const pago = pags.filter(p => p.categoria === c.key).reduce((a, p) => a + p.valor, 0);
+            const falta = Math.max(0, c.planejado - pago);
+            const pct = c.planejado > 0 ? Math.min(100, (pago / c.planejado) * 100) : 0;
+            return (
+              <div key={c.key} className="bg-card rounded-xl p-2.5 border border-border/50">
+                <div className="flex items-start justify-between gap-2 mb-1.5">
+                  <div>
+                    <p className="text-xs font-semibold text-foreground">{catLabel[c.key]}</p>
+                    <p className="text-[10px] text-muted-foreground">{c.detalhe}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs font-bold text-foreground">{fmt(c.planejado)}</p>
+                    <p className="text-[10px] text-muted-foreground">planejado</p>
+                  </div>
+                </div>
+                <Bar pago={pago} total={c.planejado} cor={pct >= 100 ? "bg-green-500" : pct > 0 ? "bg-amber-500" : "bg-muted-foreground/30"} />
+                <div className="flex justify-between mt-1">
+                  <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">✓ {fmt(pago)} pago</span>
+                  {falta > 0
+                    ? <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">⏳ {fmt(falta)} falta</span>
+                    : <span className="text-[10px] text-green-600 font-bold">100%</span>}
+                </div>
+              </div>
+            );
+          })}
         </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">{label1}</Label>
-          <Input type="number" inputMode="numeric" value={val1 || ""} onChange={e => setVal1(Number(e.target.value))} className="h-8 text-sm bg-card shadow-sm border-border font-medium" />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">{label2}</Label>
-          <Input type="number" inputMode="numeric" value={val2 || ""} onChange={e => setVal2(Number(e.target.value))} className="h-8 text-sm bg-card shadow-sm border-border font-medium" />
-        </div>
-      </div>
-      
-      <div className="pt-3 border-t border-border space-y-2">
-        <Label className={`text-[11px] font-bold uppercase tracking-wider flex items-center justify-between ${excedeu ? 'text-destructive' : 'text-foreground'}`}>
-           <span className="flex items-center gap-1"><Wallet size={12} /> Valor a Pagar Agora</span>
-           {limiteMax > 0 && <span className="font-normal text-muted-foreground">Limite: {fmt(limiteMax)}</span>}
-        </Label>
-        
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">R$</span>
-            <Input 
-              type="number" 
-              inputMode="decimal" 
-              value={valorPago} 
-              onChange={e => setValorPago(e.target.value)} 
-              className={`h-11 w-full pl-8 bg-card text-lg font-bold shadow-sm ${excedeu ? 'border-destructive text-destructive focus-visible:ring-destructive' : 'border-green-500/50 focus-visible:ring-green-500'}`} 
-              placeholder="0,00" 
-            />
+        {/* Total geral */}
+        <div className={`mt-2.5 rounded-xl p-3 border ${saldo <= 0 ? "bg-green-500/10 border-green-500/30" : "bg-rose-500/10 border-rose-500/30"}`}>
+          <div className="flex justify-between items-center mb-1.5">
+            <span className="text-xs font-bold text-foreground">Total da Campanha</span>
+            <span className="text-sm font-bold text-foreground">{fmt(totalCampanha)}</span>
           </div>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-11 px-3 border-dashed border-primary/50 text-xs font-bold text-primary hover:bg-primary/5 hover:border-primary shrink-0 flex flex-col items-center justify-center leading-none"
-            onClick={() => setValorPago(String(limiteMax))}
-            title="Preencher valor total planejado"
-          >
-            <span className="text-[10px] opacity-70">VALOR</span>
-            <span>TOTAL</span>
-          </Button>
+          <Bar pago={totalPago} total={totalCampanha} cor={saldo <= 0 ? "bg-green-500" : "bg-primary"} />
+          <div className="flex justify-between mt-1.5">
+            <span className="text-[11px] text-green-600 dark:text-green-400 font-bold">Pago: {fmt(totalPago)}</span>
+            <span className={`text-[11px] font-bold ${saldo > 0 ? "text-rose-500" : "text-green-500"}`}>
+              {saldo > 0 ? `Falta: ${fmt(saldo)}` : "Quitado ✓"}
+            </span>
+          </div>
         </div>
+      </div>
 
-        <Button 
-          onClick={handleSave} 
-          disabled={saving || !val1 || excedeu || !valorPago} 
-          className={`w-full h-11 font-bold text-sm shadow-lg transition-all active:scale-[0.98] ${registrado ? 'bg-green-600 hover:bg-green-600' : 'bg-gradient-to-r from-pink-500 to-rose-400 hover:opacity-95'}`}
-        >
-          {saving ? (
-            <div className="flex items-center gap-2">
-              <Loader2 size={18} className="animate-spin" />
-              <span>Salvando no Banco...</span>
-            </div>
-          ) : registrado ? (
-            <div className="flex items-center gap-2">
-              <CheckCircle2 size={18} />
-              <span>PAGAMENTO REGISTRADO!</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Save size={18} />
-              <span>SALVAR PAGAMENTO</span>
-            </div>
-          )}
+      {/* Histórico por mês */}
+      {historicoOrdenado.length > 0 && (
+        <div className="px-3 pb-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-2 mt-1 flex items-center gap-1">
+            <Receipt size={10} /> Histórico de Pagamentos
+          </p>
+          <div className="space-y-1.5">
+            {historicoOrdenado.map(([key, { total, itens }]) => {
+              const [a, m] = key.split("-");
+              return (
+                <div key={key} className="bg-card rounded-xl border border-border/50 overflow-hidden">
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <span className="text-xs font-semibold text-foreground">
+                      {MESES[parseInt(m) - 1]}/{a}
+                    </span>
+                    <span className="text-sm font-bold text-green-600 dark:text-green-400">{fmt(total)}</span>
+                  </div>
+                  <div className="border-t border-border/30 divide-y divide-border/20">
+                    {itens.map(p => (
+                      <div key={p.id} className="flex items-center justify-between px-3 py-1">
+                        <span className="text-[10px] text-muted-foreground capitalize">
+                          {p.categoria === "retirada" ? "Retirada Mensal" : p.categoria}
+                          {p.observacao && ` — ${p.observacao}`}
+                        </span>
+                        <span className="text-[11px] font-bold text-foreground">{fmt(p.valor)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Formulário de pagamento inline ──────────────────────────────────────────
+function QuickPayForm({ valorEsperado, onSave, onCancel, saving }: {
+  valorEsperado: number;
+  onSave: (valor: number, obs: string) => Promise<void>;
+  onCancel: () => void; saving: boolean;
+}) {
+  const [valor, setValor] = useState(valorEsperado > 0 ? String(valorEsperado) : "");
+  const [obs, setObs] = useState("");
+  const valorNum = parseFloat(valor.replace(",", ".")) || 0;
+  const parcial = valorEsperado > 0 && valorNum > 0 && valorNum < valorEsperado;
+
+  return (
+    <div className="border-t border-border/60 bg-muted/30 px-3 py-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-foreground">Registrar pagamento</span>
+        {valorEsperado > 0 && <span className="text-[10px] text-muted-foreground">Esperado: {fmt(valorEsperado)}</span>}
+      </div>
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-medium">R$</span>
+          <Input type="number" inputMode="decimal" value={valor} onChange={e => setValor(e.target.value)}
+            className="pl-8 h-11 text-base font-bold bg-card border-primary/40" placeholder="0,00" autoFocus />
+        </div>
+        <Button onClick={() => onSave(valorNum, obs)} disabled={saving || valorNum <= 0}
+          className="h-11 px-4 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-bold shrink-0">
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
         </Button>
-
-        {excedeu && (
-          <div className="bg-destructive/10 border border-destructive/20 p-2 rounded-lg animate-pulse">
-            <p className="text-[11px] text-destructive font-bold text-center">
-              ❌ ERRO: O valor ({fmt(valorDigitado)}) é maior que o planejado ({fmt(limiteMax)}). 
-              Abaixe o valor para salvar.
-            </p>
-          </div>
-        )}
+        <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" onClick={onCancel}><X size={16} /></Button>
       </div>
-    </div>
-  )
-}
-
-function BaixaForm({
-  suplente,
-  mes,
-  ano,
-  onClose,
-}: {
-  suplente: Suplente;
-  mes: number;
-  ano: number;
-  onClose: () => void;
-}) {
-  return (
-    <div className="bg-card border-t border-b border-border/60 py-4 px-2 sm:px-4 space-y-1 mb-2">
-      <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-2">
-        <h4 className="font-bold text-sm text-primary uppercase tracking-wider flex items-center gap-2">
-          <Calculator size={14} /> Ficha de Pagamentos
-        </h4>
-        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:bg-muted" onClick={onClose}><X size={14} /></Button>
-      </div>
-      
-      <p className="text-[10px] text-muted-foreground mb-3 leading-relaxed">
-        Você pode alterar a <strong>quantidade</strong> ou os valores unitários aqui mesmo caso tenham mudado hoje. Isso ajustará logo em seguida o saldo do candidato. Insira o valor do depósito/pagamento no último campo e clique em registrar.
-      </p>
-
-      <BaixaCategoryRow categoria="retirada" label="Retirada Mensal" suplente={suplente} mes={mes} ano={ano} onSaved={onClose} />
-      <BaixaCategoryRow categoria="plotagem" label="Plotagem" suplente={suplente} mes={mes} ano={ano} onSaved={onClose} />
-      <BaixaCategoryRow categoria="liderancas" label="Lideranças na Campanha" suplente={suplente} mes={mes} ano={ano} onSaved={onClose} />
-      <BaixaCategoryRow categoria="fiscais" label="Fiscais no Dia da Eleição" suplente={suplente} mes={mes} ano={ano} onSaved={onClose} />
+      <Input value={obs} onChange={e => setObs(e.target.value)} className="h-8 text-xs bg-card" placeholder="Observação (opcional)" />
+      {parcial && (
+        <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-1.5">
+          <AlertCircle size={11} className="text-amber-500 shrink-0" />
+          <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">Adiantamento — faltará {fmt(valorEsperado - valorNum)}</span>
+        </div>
+      )}
     </div>
   );
 }
 
-function PagamentoItem({ p, onDelete }: { p: Pagamento, onDelete: (id: string) => void }) {
+// ─── Item no histórico (editar/excluir) ──────────────────────────────────────
+function HistoricoItem({ p, onDelete }: { p: Pagamento; onDelete: (id: string) => void }) {
   const qc = useQueryClient();
-  const [isEditing, setIsEditing] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [valor, setValor] = useState(String(p.valor));
   const [obs, setObs] = useState(p.observacao || "");
   const [saving, setSaving] = useState(false);
+  const cats: Record<string, string> = { retirada: "Retirada", plotagem: "Plotagem", liderancas: "Lideranças", fiscais: "Fiscais", salario: "Salário", outro: "Outro" };
 
-  const handleSaveEdit = async () => {
+  const save = async () => {
     const v = parseFloat(valor.replace(",", "."));
-    if (!v || v <= 0) return toast({ title: "Valor inválido", variant: "destructive" });
+    if (!v) return;
     setSaving(true);
-    const { error } = await supabase.from("pagamentos").update({
-      valor: v, observacao: obs.trim() || null
-    }).eq("id", p.id);
+    const { error } = await supabase.from("pagamentos").update({ valor: v, observacao: obs || null }).eq("id", p.id);
     setSaving(false);
-    if (error) {
-      toast({ title: "Erro ao editar", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Pagamento atualizado!" });
-      qc.invalidateQueries({ queryKey: ["pagamentos"] });
-      setIsEditing(false);
-    }
+    if (!error) { toast({ title: "Atualizado!" }); qc.invalidateQueries({ queryKey: ["pagamentos"] }); setEditing(false); }
   };
 
-  if (isEditing) {
-    return (
-      <div className="flex flex-col gap-2 px-3 py-3 border-b border-border/50 bg-background/50">
-        <div className="flex items-center gap-2">
-          <div className="flex-1 space-y-1">
-            <Label className="text-[10px] text-muted-foreground uppercase">Valor do Pagamento</Label>
-            <Input type="number" inputMode="decimal" value={valor} onChange={e => setValor(e.target.value)} className="h-7 text-xs bg-card" />
-          </div>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground uppercase">Observação</Label>
-          <Input value={obs} onChange={e => setObs(e.target.value)} className="h-7 text-xs bg-card" />
-        </div>
-        <div className="flex justify-end gap-2 mt-1">
-          <Button size="sm" variant="ghost" className="h-7 text-[10px] px-2" onClick={() => setIsEditing(false)}>Cancelar</Button>
-          <Button size="sm" className="h-7 text-[10px] px-3 bg-primary" onClick={handleSaveEdit} disabled={saving}>
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} className="mr-1" />} Salvar
-          </Button>
-        </div>
+  if (editing) return (
+    <div className="px-3 py-2 space-y-1.5 border-b border-border/40 bg-muted/20">
+      <div className="flex gap-1.5">
+        <Input type="number" value={valor} onChange={e => setValor(e.target.value)} className="h-7 text-xs flex-1 bg-card" />
+        <Input value={obs} onChange={e => setObs(e.target.value)} className="h-7 text-xs flex-1 bg-card" placeholder="Obs" />
+        <Button size="sm" className="h-7 px-2 text-[10px] bg-primary" onClick={save} disabled={saving}>
+          {saving ? <Loader2 size={10} className="animate-spin" /> : "✓"}
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setEditing(false)}>✕</Button>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="flex items-center justify-between px-3 py-2">
+    <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/30 last:border-0">
       <div className="min-w-0">
-        <p className="text-xs font-medium text-foreground">{CATEGORIAS[p.categoria] || p.categoria}</p>
-        {p.observacao && <p className="text-[10px] text-muted-foreground truncate">{p.observacao}</p>}
-        <p className="text-[10px] text-muted-foreground">
-          {new Date(p.created_at).toLocaleDateString("pt-BR")}
-        </p>
+        <span className="text-xs font-medium text-foreground">{cats[p.categoria] || p.categoria}</span>
+        {p.observacao && <span className="text-[10px] text-muted-foreground ml-2">{p.observacao}</span>}
+        <p className="text-[10px] text-muted-foreground">{new Date(p.created_at).toLocaleDateString("pt-BR")}</p>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <span className="text-sm font-bold text-green-500">{fmt(p.valor)}</span>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-muted-foreground hover:text-foreground"
-          onClick={() => setIsEditing(true)}
-        >
-          <Pencil size={12} />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-destructive"
-          onClick={() => onDelete(p.id)}
-        >
-          <Trash2 size={12} />
-        </Button>
+      <div className="flex items-center gap-1 shrink-0">
+        <span className="text-sm font-bold text-green-600 dark:text-green-400">{fmt(p.valor)}</span>
+        <button onClick={() => setEditing(true)} className="p-1 text-muted-foreground"><Pencil size={11} /></button>
+        <button onClick={() => onDelete(p.id)} className="p-1 text-destructive"><Trash2 size={11} /></button>
       </div>
     </div>
   );
 }
 
-function SuplenteCard({
-  suplente,
-  pagamentos,
-  mes,
-  ano,
+// ─── Card: pessoa pendente ────────────────────────────────────────────────────
+function PendenteCard({
+  tipo, id, nome, subtitulo, valorEsperado, totalPagoMes,
+  pagamentosMes, todosPagamentos, suplente, mes, ano,
 }: {
-  suplente: Suplente;
-  pagamentos: Pagamento[];
-  mes: number;
-  ano: number;
+  tipo: "suplente" | "lideranca" | "admin"; id: string; nome: string; subtitulo?: string;
+  valorEsperado: number; totalPagoMes: number; pagamentosMes: Pagamento[];
+  todosPagamentos?: Pagamento[]; suplente?: Suplente; mes: number; ano: number;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const [isAddingBaixa, setIsAddingBaixa] = useState(false);
   const qc = useQueryClient();
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showFicha, setShowFicha] = useState(false);
+  const [showHist, setShowHist] = useState(false);
+  const faltando = Math.max(0, valorEsperado - totalPagoMes);
+  const temAdiantamento = totalPagoMes > 0 && totalPagoMes < valorEsperado;
+  const tipoColor: Record<string, string> = { suplente: "text-pink-500 bg-pink-500/10", lideranca: "text-violet-500 bg-violet-500/10", admin: "text-blue-500 bg-blue-500/10" };
+  const tipoLabel: Record<string, string> = { suplente: "Suplente", lideranca: "Liderança", admin: "Admin" };
+  const catPadrao: Record<string, string> = { suplente: "retirada", lideranca: "retirada", admin: "salario" };
 
-  const pagamentosDoMes = pagamentos.filter(
-    (p) => p.suplente_id === suplente.id && p.mes === mes && p.ano === ano
-  );
+  const handleSave = async (valor: number, obs: string) => {
+    setSaving(true);
+    const payload: Record<string, unknown> = { tipo_pessoa: tipo, mes, ano, categoria: catPadrao[tipo], valor, observacao: obs || null };
+    if (tipo === "suplente") payload.suplente_id = id;
+    else if (tipo === "lideranca") payload.lideranca_id = id;
+    else payload.admin_id = id;
+    const { error } = await supabase.from("pagamentos").insert(payload);
+    setSaving(false);
+    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    else { toast({ title: `✅ ${fmt(valor)} registrado!`, description: nome }); qc.invalidateQueries({ queryKey: ["pagamentos"] }); setPaying(false); }
+  };
 
-  const pagamentosGlobais = pagamentos.filter((p) => p.suplente_id === suplente.id);
-
-  // Totais Gerais
-  const totalPagoGlobal = pagamentosGlobais.reduce((a, p) => a + (p.valor || 0), 0);
-  const totalCampanha = calcTotaisFinanceiros(suplente).totalFinal;
-  const saldo = totalCampanha - totalPagoGlobal;
-  const pct = totalCampanha > 0 ? Math.min(100, (totalPagoGlobal / totalCampanha) * 100) : 0;
-
-  // Totais do mês para interface
-  const totalPagoNoMes = pagamentosDoMes.reduce((a, p) => a + (p.valor || 0), 0);
-
-  // Status de retirada no mês
-  const retiradaPagaNoMes = pagamentosDoMes.some(p => p.categoria === "retirada");
-  const valorRetiradaPagaNoMes = pagamentosDoMes
-    .filter(p => p.categoria === "retirada")
-    .reduce((a, p) => a + (p.valor || 0), 0);
-  const temRetirada = suplente.retirada_mensal_valor > 0;
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Excluir este pagamento?")) return;
-    setDeletingId(id);
-    const { error } = await supabase.from("pagamentos").delete().eq("id", id);
-    setDeletingId(null);
-    if (error) {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
-    } else {
-      qc.invalidateQueries({ queryKey: ["pagamentos"] });
-    }
+  const handleDelete = async (pagId: string) => {
+    if (!confirm("Excluir pagamento?")) return;
+    await supabase.from("pagamentos").delete().eq("id", pagId);
+    qc.invalidateQueries({ queryKey: ["pagamentos"] });
   };
 
   return (
-    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-      {/* Header */}
-      <div className="p-3 pb-2">
+    <div className="bg-card rounded-2xl border border-amber-500/30 shadow-sm overflow-hidden">
+      <div className="p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="font-bold text-foreground text-sm truncate">{suplente.nome}</p>
-            {suplente.regiao_atuacao && (
-              <p className="text-[11px] text-muted-foreground">{suplente.regiao_atuacao}</p>
-            )}
-            {/* Badge de status da retirada mensal */}
-            {temRetirada && (
-              retiradaPagaNoMes ? (
-                <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-500/10 border border-green-500/30 rounded-full px-2 py-0.5">
-                  <CheckCircle2 size={9} /> Retirada Paga {fmt(valorRetiradaPagaNoMes)}
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-2 py-0.5">
-                  <AlertCircle size={9} /> Retirada Pendente {fmt(suplente.retirada_mensal_valor)}
-                </span>
-              )
+            <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+              <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md ${tipoColor[tipo]}`}>{tipoLabel[tipo]}</span>
+              {temAdiantamento && <span className="text-[9px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-md">Adiantamento</span>}
+            </div>
+            <p className="font-bold text-foreground text-sm truncate">{nome}</p>
+            {subtitulo && <p className="text-[11px] text-muted-foreground truncate">{subtitulo}</p>}
+            {temAdiantamento && (
+              <div className="mt-1.5">
+                <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+                  <span>Pago: {fmt(totalPagoMes)}</span><span>Total: {fmt(valorEsperado)}</span>
+                </div>
+                <Bar pago={totalPagoMes} total={valorEsperado} cor="bg-amber-500" />
+              </div>
             )}
           </div>
-          <Button
-            size="sm"
-            className="h-7 px-2 text-xs gap-1 shrink-0 bg-green-500 hover:bg-green-600 text-white"
-            onClick={() => setIsAddingBaixa(!isAddingBaixa)}
-            variant={isAddingBaixa ? "secondary" : "default"}
-          >
-            {isAddingBaixa ? <X size={12} className="text-foreground"/> : <Plus size={12} />}
-            <span className={isAddingBaixa ? "text-foreground" : ""}>{isAddingBaixa ? "Cancelar" : "Pagar"}</span>
-          </Button>
-        </div>
-      </div>
-
-      {isAddingBaixa && (
-        <BaixaForm
-          suplente={suplente}
-          mes={mes}
-          ano={ano}
-          onClose={() => setIsAddingBaixa(false)}
-        />
-      )}
-
-      {/* Totais */}
-      <div className="grid grid-cols-4 border-t border-border divide-x divide-border bg-muted/40">
-        <div className="py-2 px-1 text-center">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Campanha</p>
-          <p className="text-xs font-bold text-foreground">{fmt(totalCampanha)}</p>
-        </div>
-        <div className="py-2 px-1 text-center bg-green-500/10">
-          <p className="text-[9px] uppercase tracking-wider text-green-600 dark:text-green-500 font-medium">+ Este Mês</p>
-          <p className="text-xs font-bold text-green-600 dark:text-green-500">{fmt(totalPagoNoMes)}</p>
-        </div>
-        <div className="py-2 px-1 text-center">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Pago Geral</p>
-          <p className="text-xs font-bold text-foreground">{fmt(totalPagoGlobal)}</p>
-        </div>
-        <div className="py-2 px-1 text-center">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Saldo a Pagar</p>
-          <p className={`text-xs font-bold ${saldo > 0 ? "text-destructive" : "text-green-500"}`}>{fmt(saldo)}</p>
-        </div>
-      </div>
-
-      {/* Barra de progresso */}
-      <div className="px-3 py-3 border-t border-border/50 bg-muted/20">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight italic">Status de Pagamento da Campanha</span>
-          <span className="text-[11px] font-bold text-primary">{pct.toFixed(0)}% Pago</span>
-        </div>
-        <div className="h-2.5 bg-muted rounded-full overflow-hidden shadow-inner border border-border/20">
-          <div
-            className="h-full bg-gradient-to-r from-pink-500 to-rose-400 rounded-full transition-all duration-700"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        <div className="flex justify-between mt-1">
-           <span className="text-[9px] text-muted-foreground/70 uppercase">{fmt(totalPagoGlobal)} pagos</span>
-           <span className="text-[9px] text-muted-foreground/70 uppercase">Faltam {fmt(saldo)}</span>
-        </div>
-      </div>
-
-      {/* Histórico de pagamentos */}
-      {pagamentosDoMes.length > 0 && (
-        <>
-          <button
-            className="w-full flex items-center justify-between px-3 py-2 border-t border-border text-xs text-muted-foreground hover:bg-muted/30 transition-colors"
-            onClick={() => setExpanded(!expanded)}
-          >
-            <span className="font-semibold">{expanded ? "Ocultar Histórico" : "Ver Histórico de Pagamentos do Mês"}</span>
-            {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
-
-          {expanded && (
-            <div className="border-t border-border/50 divide-y divide-border/50 bg-muted/10">
-              {pagamentosDoMes.map((p) => (
-                <PagamentoItem key={p.id} p={p} onDelete={handleDelete} />
-              ))}
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <div className="text-right">
+              <p className="text-[10px] text-muted-foreground">Falta pagar</p>
+              <p className="text-xl font-bold text-amber-600 dark:text-amber-400 leading-tight">{fmt(faltando)}</p>
             </div>
-          )}
-        </>
+            {!paying && (
+              <Button size="sm" onClick={() => setPaying(true)}
+                className="h-7 px-3 text-xs bg-gradient-to-r from-pink-500 to-rose-400 text-white font-bold">
+                Pagar
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {paying && <QuickPayForm valorEsperado={faltando} onSave={handleSave} onCancel={() => setPaying(false)} saving={saving} />}
+
+      {/* Ações inferiores */}
+      <div className="flex border-t border-border/30 divide-x divide-border/30">
+        {tipo === "suplente" && suplente && todosPagamentos && (
+          <button onClick={() => { setShowFicha(!showFicha); setShowHist(false); }}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-primary font-semibold hover:bg-primary/5">
+            <TrendingDown size={12} /> Ficha Completa {showFicha ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+          </button>
+        )}
+        {pagamentosMes.length > 0 && (
+          <button onClick={() => { setShowHist(!showHist); setShowFicha(false); }}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-muted-foreground hover:bg-muted/20">
+            {pagamentosMes.length} pag. {showHist ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+          </button>
+        )}
+      </div>
+
+      {showFicha && suplente && todosPagamentos && (
+        <FichaFinanceira suplente={suplente} todosPagamentos={todosPagamentos} />
+      )}
+      {showHist && pagamentosMes.length > 0 && (
+        <div className="bg-muted/10 border-t border-border/30">
+          {pagamentosMes.map(p => <HistoricoItem key={p.id} p={p} onDelete={handleDelete} />)}
+        </div>
       )}
     </div>
   );
 }
 
+// ─── Card: pessoa paga ────────────────────────────────────────────────────────
+function PagoCard({
+  tipo, id, nome, subtitulo, valorEsperado, totalPagoMes,
+  pagamentosMes, todosPagamentos, suplente, mes, ano,
+}: {
+  tipo: "suplente" | "lideranca" | "admin"; id: string; nome: string; subtitulo?: string;
+  valorEsperado: number; totalPagoMes: number; pagamentosMes: Pagamento[];
+  todosPagamentos?: Pagamento[]; suplente?: Suplente; mes: number; ano: number;
+}) {
+  const qc = useQueryClient();
+  const [paying, setPaying] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showFicha, setShowFicha] = useState(false);
+  const [showHist, setShowHist] = useState(false);
+  const tipoColor: Record<string, string> = { suplente: "text-pink-500 bg-pink-500/10", lideranca: "text-violet-500 bg-violet-500/10", admin: "text-blue-500 bg-blue-500/10" };
+  const tipoLabel: Record<string, string> = { suplente: "Suplente", lideranca: "Liderança", admin: "Admin" };
+  const catPadrao: Record<string, string> = { suplente: "retirada", lideranca: "retirada", admin: "salario" };
+
+  const handleSave = async (valor: number, obs: string) => {
+    setSaving(true);
+    const payload: Record<string, unknown> = { tipo_pessoa: tipo, mes, ano, categoria: catPadrao[tipo], valor, observacao: obs || null };
+    if (tipo === "suplente") payload.suplente_id = id;
+    else if (tipo === "lideranca") payload.lideranca_id = id;
+    else payload.admin_id = id;
+    const { error } = await supabase.from("pagamentos").insert(payload);
+    setSaving(false);
+    if (!error) { toast({ title: "✅ Adicional registrado!" }); qc.invalidateQueries({ queryKey: ["pagamentos"] }); setPaying(false); }
+  };
+
+  const handleDelete = async (pagId: string) => {
+    if (!confirm("Excluir?")) return;
+    await supabase.from("pagamentos").delete().eq("id", pagId);
+    qc.invalidateQueries({ queryKey: ["pagamentos"] });
+  };
+
+  return (
+    <div className="bg-card rounded-2xl border border-green-500/20 shadow-sm overflow-hidden">
+      <div className="p-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md ${tipoColor[tipo]}`}>{tipoLabel[tipo]}</span>
+              <CheckCircle2 size={11} className="text-green-500" />
+            </div>
+            <p className="font-bold text-foreground text-sm truncate">{nome}</p>
+            {subtitulo && <p className="text-[11px] text-muted-foreground truncate">{subtitulo}</p>}
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-[10px] text-muted-foreground">Pago neste mês</p>
+            <p className="text-base font-bold text-green-600 dark:text-green-400">{fmt(totalPagoMes)}</p>
+            {valorEsperado > 0 && totalPagoMes > valorEsperado &&
+              <p className="text-[10px] text-primary">+{fmt(totalPagoMes - valorEsperado)} extra</p>}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex border-t border-border/30 divide-x divide-border/30">
+        {tipo === "suplente" && suplente && todosPagamentos && (
+          <button onClick={() => { setShowFicha(!showFicha); setShowHist(false); }}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-primary font-semibold hover:bg-primary/5">
+            <TrendingDown size={12} /> Ficha Completa {showFicha ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+          </button>
+        )}
+        <button onClick={() => { setShowHist(!showHist); setShowFicha(false); }}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-muted-foreground hover:bg-muted/20">
+          {pagamentosMes.length} pag. {showHist ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+        </button>
+        <button onClick={() => setPaying(!paying)}
+          className="px-3 py-2 text-[11px] text-primary font-semibold hover:bg-primary/5">
+          + Extra
+        </button>
+      </div>
+
+      {paying && <QuickPayForm valorEsperado={0} onSave={handleSave} onCancel={() => setPaying(false)} saving={saving} />}
+      {showFicha && suplente && todosPagamentos && (
+        <FichaFinanceira suplente={suplente} todosPagamentos={todosPagamentos} />
+      )}
+      {showHist && (
+        <div className="bg-muted/10 border-t border-border/30">
+          {pagamentosMes.map(p => <HistoricoItem key={p.id} p={p} onDelete={handleDelete} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Página Principal ─────────────────────────────────────────────────────────
 export default function Pagamentos() {
   const now = new Date();
   const [mes, setMes] = useState(now.getMonth() + 1);
   const [ano, setAno] = useState(now.getFullYear());
+  const [filtro, setFiltro] = useState<FiltroAba>("todos");
   const [busca, setBusca] = useState("");
-  const [bulkPaying, setBulkPaying] = useState(false);
+  const [showPagos, setShowPagos] = useState(false);
   const qc = useQueryClient();
 
-  const { data: suplentes, isLoading: loadingSuplentes } = useQuery({
+  const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes"],
     queryFn: async () => {
       const { data, error } = await supabase.from("suplentes").select(
-        "id, nome, regiao_atuacao, partido, retirada_mensal_valor, retirada_mensal_meses, plotagem_qtd, plotagem_valor_unit, liderancas_qtd, liderancas_valor_unit, fiscais_qtd, fiscais_valor_unit, total_campanha"
+        "id,nome,regiao_atuacao,partido,retirada_mensal_valor,retirada_mensal_meses,plotagem_qtd,plotagem_valor_unit,liderancas_qtd,liderancas_valor_unit,fiscais_qtd,fiscais_valor_unit,total_campanha"
       ).order("nome");
       if (error) throw error;
       return data as unknown as Suplente[];
     },
-    staleTime: 1000 * 60 * 5, // 5 minutos de cache - deixa instantâneo
+    staleTime: 300000,
   });
 
-  const { data: pagamentos, isLoading: loadingPag } = useQuery({
+  const { data: liderancas, isLoading: loadL } = useQuery({
+    queryKey: ["liderancas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("liderancas").select("id,nome,regiao,retirada_mensal_valor,chave_pix").order("nome");
+      if (error) throw error;
+      return data as unknown as Lideranca[];
+    },
+    staleTime: 300000,
+  });
+
+  const { data: administrativo, isLoading: loadA } = useQuery({
+    queryKey: ["administrativo"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("administrativo").select("id,nome,whatsapp,valor_contrato").order("nome");
+      if (error) throw error;
+      return data as unknown as AdminPessoa[];
+    },
+    staleTime: 300000,
+  });
+
+  const { data: pagamentos, isLoading: loadP } = useQuery({
     queryKey: ["pagamentos"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("pagamentos")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("pagamentos").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as Pagamento[];
     },
-    staleTime: 1000 * 60 * 5, // 5 minutos de cache
+    staleTime: 300000,
   });
 
-  const isLoading = loadingSuplentes || loadingPag;
-
+  const isLoading = loadS || loadL || loadA || loadP;
   const navMes = (dir: -1 | 1) => {
-    let m = mes + dir;
-    let a = ano;
-    if (m < 1) { m = 12; a--; }
-    if (m > 12) { m = 1; a++; }
-    setMes(m);
-    setAno(a);
+    let m = mes + dir, a = ano;
+    if (m < 1) { m = 12; a--; } if (m > 12) { m = 1; a++; }
+    setMes(m); setAno(a);
   };
 
-  const pagMes = (pagamentos || []).filter((p) => p.mes === mes && p.ano === ano);
-  const totalPagoMes = pagMes.reduce((a, p) => a + (p.valor || 0), 0);
-  const totalCampanhaGeral = (suplentes || []).reduce(
-    (a, s) => a + calcTotaisFinanceiros(s).totalFinal, 0
-  );
-  const totalPagoGeral = (pagamentos || []).reduce((a, p) => a + (p.valor || 0), 0);
-  const pctGeral = totalCampanhaGeral > 0 ? Math.min(100, (totalPagoGeral / totalCampanhaGeral) * 100) : 0;
+  const pagsMes = (pagamentos || []).filter(p => p.mes === mes && p.ano === ano);
+  const supPlanejadoMes = (suplentes || []).reduce((a, s) => a + (s.retirada_mensal_valor || 0), 0);
+  const lidPlanejadoMes = (liderancas || []).reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0);
+  const admPlanejadoMes = (administrativo || []).reduce((a, p) => a + (p.valor_contrato || 0), 0);
+  const totalPlanejadoMes = supPlanejadoMes + lidPlanejadoMes + admPlanejadoMes;
+  const supPagoMes = pagsMes.filter(p => p.tipo_pessoa === "suplente").reduce((a, p) => a + p.valor, 0);
+  const lidPagoMes = pagsMes.filter(p => p.tipo_pessoa === "lideranca").reduce((a, p) => a + p.valor, 0);
+  const admPagoMes = pagsMes.filter(p => p.tipo_pessoa === "admin").reduce((a, p) => a + p.valor, 0);
+  const totalPagoMes = supPagoMes + lidPagoMes + admPagoMes;
+  const totalFaltaMes = Math.max(0, totalPlanejadoMes - totalPagoMes);
 
-  // Filtro de busca com normalização de acentos (Tânia === tania)
-  const norm = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const suplantesFiltrados = (suplentes || []).filter(s => {
+  type PEntry = {
+    tipo: "suplente" | "lideranca" | "admin"; id: string; nome: string; subtitulo?: string;
+    valorEsperado: number; totalPagoMes: number; pagamentosMes: Pagamento[];
+    todosPagamentos?: Pagamento[]; suplente?: Suplente; pago: boolean;
+  };
+
+  const todasPessoas: PEntry[] = [];
+
+  (suplentes || []).forEach(s => {
+    if ((s.retirada_mensal_valor || 0) <= 0) return;
+    const pags = pagsMes.filter(p => p.suplente_id === s.id);
+    const total = pags.reduce((a, p) => a + p.valor, 0);
+    todasPessoas.push({
+      tipo: "suplente", id: s.id, nome: s.nome,
+      subtitulo: [s.regiao_atuacao, s.partido].filter(Boolean).join(" · ") || undefined,
+      valorEsperado: s.retirada_mensal_valor, totalPagoMes: total,
+      pagamentosMes: pags,
+      todosPagamentos: (pagamentos || []).filter(p => p.suplente_id === s.id),
+      suplente: s,
+      pago: total >= s.retirada_mensal_valor,
+    });
+  });
+
+  (liderancas || []).forEach(l => {
+    const val = l.retirada_mensal_valor || 0;
+    if (val <= 0) return;
+    const pags = pagsMes.filter(p => p.lideranca_id === l.id);
+    const total = pags.reduce((a, p) => a + p.valor, 0);
+    todasPessoas.push({
+      tipo: "lideranca", id: l.id, nome: l.nome,
+      subtitulo: [l.regiao, l.chave_pix ? `PIX: ${l.chave_pix}` : undefined].filter(Boolean).join(" · ") || undefined,
+      valorEsperado: val, totalPagoMes: total, pagamentosMes: pags,
+      pago: total >= val,
+    });
+  });
+
+  (administrativo || []).forEach(a => {
+    const val = a.valor_contrato || 0;
+    if (val <= 0) return;
+    const pags = pagsMes.filter(p => p.admin_id === a.id);
+    const total = pags.reduce((a, p) => a + p.valor, 0);
+    todasPessoas.push({
+      tipo: "admin", id: a.id, nome: a.nome,
+      subtitulo: a.whatsapp || undefined,
+      valorEsperado: val, totalPagoMes: total, pagamentosMes: pags,
+      pago: total >= val,
+    });
+  });
+
+  const matchBusca = (p: PEntry) => {
     if (!busca.trim()) return true;
     const q = norm(busca);
-    return norm(s.nome).includes(q) ||
-           norm(s.regiao_atuacao || "").includes(q) ||
-           norm(s.partido || "").includes(q);
-  });
-
-  // Stats de retirada do mês
-  const suplanteComRetirada = suplantesFiltrados.filter(s => s.retirada_mensal_valor > 0);
-  const suplantesSemRetiradaPaga = suplanteComRetirada.filter(s =>
-    !(pagamentos || []).some(p =>
-      p.suplente_id === s.id && p.mes === mes && p.ano === ano && p.categoria === "retirada"
-    )
-  );
-  const todosRetiradaPagos = suplanteComRetirada.length > 0 && suplantesSemRetiradaPaga.length === 0;
-
-  const handlePagarRetiradaTodos = async () => {
-    if (suplantesSemRetiradaPaga.length === 0) return;
-    const totalLote = suplantesSemRetiradaPaga.reduce((a, s) => a + s.retirada_mensal_valor, 0);
-    const nomes = suplantesSemRetiradaPaga.map(s => `• ${s.nome} — ${fmt(s.retirada_mensal_valor)}`).join("\n");
-    if (!confirm(
-      `Registrar retirada de ${MESES[mes - 1]}/${ano} para ${suplantesSemRetiradaPaga.length} suplente(s)?\n\n${nomes}\n\nTotal: ${fmt(totalLote)}`
-    )) return;
-
-    setBulkPaying(true);
-    const inserts = suplantesSemRetiradaPaga.map(s => ({
-      suplente_id: s.id,
-      mes,
-      ano,
-      categoria: "retirada",
-      valor: s.retirada_mensal_valor,
-      observacao: `Pagamento em lote — ${MESES[mes - 1]}/${ano}`,
-    }));
-    const { error } = await supabase.from("pagamentos").insert(inserts);
-    setBulkPaying(false);
-
-    if (error) {
-      toast({ title: "Erro ao registrar pagamentos em lote", description: error.message, variant: "destructive" });
-    } else {
-      toast({
-        title: `✅ ${inserts.length} retirada(s) registrada(s)!`,
-        description: `Retiradas de ${MESES[mes - 1]}/${ano} marcadas como pagas. Total: ${fmt(totalLote)}`,
-      });
-      qc.invalidateQueries({ queryKey: ["pagamentos"] });
-      qc.invalidateQueries({ queryKey: ["suplentes"] });
-    }
+    return norm(p.nome).includes(q) || norm(p.subtitulo || "").includes(q);
   };
+  const matchFiltro = (p: PEntry) => filtro === "todos" || (filtro === "suplentes" && p.tipo === "suplente") || (filtro === "liderancas" && p.tipo === "lideranca") || (filtro === "admin" && p.tipo === "admin");
+
+  const pendentes = todasPessoas.filter(p => !p.pago && matchFiltro(p) && matchBusca(p));
+  const pagos = todasPessoas.filter(p => p.pago && matchFiltro(p) && matchBusca(p));
+  const totalPendentes = todasPessoas.filter(p => !p.pago).length;
+  const totalPagos = todasPessoas.filter(p => p.pago).length;
+
+  const abas = [
+    { id: "todos" as FiltroAba, label: "Todos", count: todasPessoas.length },
+    { id: "suplentes" as FiltroAba, label: "Suplentes", icon: <List size={12} />, count: (suplentes || []).filter(s => s.retirada_mensal_valor > 0).length },
+    { id: "liderancas" as FiltroAba, label: "Lideranças", icon: <Users size={12} />, count: (liderancas || []).filter(l => (l.retirada_mensal_valor || 0) > 0).length },
+    { id: "admin" as FiltroAba, label: "Admin", icon: <Briefcase size={12} />, count: (administrativo || []).filter(a => (a.valor_contrato || 0) > 0).length },
+  ];
 
   return (
     <PageTransition>
@@ -654,126 +612,142 @@ export default function Pagamentos() {
         <h1 className="text-xl font-bold text-foreground">Pagamentos</h1>
 
         {/* Seletor de mês */}
-        <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+        <div className="bg-card rounded-2xl border border-border p-3 shadow-sm">
           <div className="flex items-center justify-between gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navMes(-1)}>
-              <ChevronLeft size={20} />
-            </Button>
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navMes(-1)}><ChevronLeft size={20} /></Button>
             <div className="text-center">
               <p className="text-lg font-bold text-foreground">{MESES[mes - 1]} {ano}</p>
               <p className="text-xs text-muted-foreground">Mês de referência</p>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => navMes(1)}>
-              <ChevronRight size={20} />
-            </Button>
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navMes(1)}><ChevronRight size={20} /></Button>
           </div>
         </div>
 
-        {/* Botão batch: Pagar Retirada de Todos */}
-        {!isLoading && suplanteComRetirada.length > 0 && (
-          <div className={`rounded-2xl border p-3 shadow-sm flex items-center justify-between gap-3 ${todosRetiradaPagos ? 'bg-green-500/10 border-green-500/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
-            <div className="min-w-0">
-              {todosRetiradaPagos ? (
-                <p className="text-sm font-bold text-green-600 dark:text-green-400 flex items-center gap-1.5">
-                  <CheckCircle2 size={14} /> Todas as retiradas de {MESES[mes - 1]} pagas!
-                </p>
-              ) : (
-                <>
-                  <p className="text-sm font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-                    <AlertCircle size={14} /> {suplantesSemRetiradaPaga.length} retirada(s) pendente(s)
-                  </p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {suplanteComRetirada.length - suplantesSemRetiradaPaga.length} de {suplanteComRetirada.length} pagas em {MESES[mes - 1]}/{ano}
-                  </p>
-                </>
-              )}
+        {/* Painel financeiro do chefe */}
+        {!isLoading && (
+          <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-pink-500 to-rose-400 px-4 py-4">
+              <div className="flex items-center gap-2 text-white/80 text-xs mb-3">
+                <Wallet size={14} /> Painel Financeiro — {MESES[mes - 1]}/{ano}
+              </div>
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="bg-white/15 rounded-xl p-2.5 text-center">
+                  <p className="text-white/70 text-[9px] uppercase tracking-wider">Planejado</p>
+                  <p className="text-white font-bold text-base leading-tight">{fmt(totalPlanejadoMes)}</p>
+                </div>
+                <div className="bg-white/15 rounded-xl p-2.5 text-center">
+                  <p className="text-white/70 text-[9px] uppercase tracking-wider">Pago</p>
+                  <p className="text-white font-bold text-base leading-tight">{fmt(totalPagoMes)}</p>
+                </div>
+                <div className="bg-black/20 rounded-xl p-2.5 text-center">
+                  <p className="text-white/70 text-[9px] uppercase tracking-wider">Falta</p>
+                  <p className="text-white font-bold text-base leading-tight">{fmt(totalFaltaMes)}</p>
+                </div>
+              </div>
+              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                <div className="h-full bg-white rounded-full transition-all duration-500"
+                  style={{ width: `${totalPlanejadoMes > 0 ? Math.min(100, (totalPagoMes / totalPlanejadoMes) * 100) : 0}%` }} />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-white/60 text-[9px]">{totalPagos} pagos · {totalPendentes} pendentes</span>
+                <span className="text-white/60 text-[9px]">{totalPlanejadoMes > 0 ? `${((totalPagoMes / totalPlanejadoMes) * 100).toFixed(0)}%` : "0%"}</span>
+              </div>
             </div>
-            {!todosRetiradaPagos && (
-              <Button
-                size="sm"
-                onClick={handlePagarRetiradaTodos}
-                disabled={bulkPaying}
-                className="shrink-0 h-9 px-3 text-xs font-bold bg-gradient-to-r from-pink-500 to-rose-400 hover:opacity-90 text-white shadow-md"
-              >
-                {bulkPaying ? (
-                  <><Loader2 size={12} className="animate-spin mr-1" /> Registrando...</>
-                ) : (
-                  <><CheckCircle2 size={12} className="mr-1" /> Pagar Todos</>
-                )}
-              </Button>
-            )}
+
+            {/* Breakdown por categoria */}
+            <div className="divide-y divide-border">
+              {[
+                { label: "Suplentes", icon: <List size={10} />, cor: "bg-pink-500", corText: "text-pink-500 bg-pink-500/10", pago: supPagoMes, planejado: supPlanejadoMes, pagos: (suplentes || []).filter(s => s.retirada_mensal_valor > 0 && pagsMes.filter(p => p.suplente_id === s.id).reduce((a, p) => a + p.valor, 0) >= s.retirada_mensal_valor).length, total: (suplentes || []).filter(s => s.retirada_mensal_valor > 0).length },
+                ...(lidPlanejadoMes > 0 ? [{ label: "Lideranças", icon: <Users size={10} />, cor: "bg-violet-500", corText: "text-violet-500 bg-violet-500/10", pago: lidPagoMes, planejado: lidPlanejadoMes, pagos: (liderancas || []).filter(l => (l.retirada_mensal_valor || 0) > 0 && pagsMes.filter(p => p.lideranca_id === l.id).reduce((a, p) => a + p.valor, 0) >= (l.retirada_mensal_valor || 0)).length, total: (liderancas || []).filter(l => (l.retirada_mensal_valor || 0) > 0).length }] : []),
+                ...(admPlanejadoMes > 0 ? [{ label: "Administrativo", icon: <Briefcase size={10} />, cor: "bg-blue-500", corText: "text-blue-500 bg-blue-500/10", pago: admPagoMes, planejado: admPlanejadoMes, pagos: (administrativo || []).filter(a => (a.valor_contrato || 0) > 0 && pagsMes.filter(p => p.admin_id === a.id).reduce((a, p) => a + p.valor, 0) >= (a.valor_contrato || 0)).length, total: (administrativo || []).filter(a => (a.valor_contrato || 0) > 0).length }] : []),
+              ].map(row => (
+                <div key={row.label} className="px-4 py-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md flex items-center gap-1 ${row.corText}`}>{row.icon}{row.label}</span>
+                      <span className="text-[11px] text-muted-foreground">{row.pagos}/{row.total} pagos</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-bold text-foreground">{fmt(row.pago)}</span>
+                      <span className="text-[10px] text-muted-foreground"> / {fmt(row.planejado)}</span>
+                    </div>
+                  </div>
+                  <Bar pago={row.pago} total={row.planejado} cor={row.cor} />
+                  {row.planejado > row.pago && (
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(row.planejado - row.pago)}</p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Resumo do mês e Geral */}
-        <div className="bg-gradient-to-r from-pink-500 to-rose-400 rounded-2xl p-4 shadow-lg">
-          <div className="flex items-center gap-2 text-white/80 text-xs mb-3">
-            <Wallet size={14} /> Resumo Geral e {MESES[mes - 1]}/{ano}
-          </div>
-          <div className="grid grid-cols-2 gap-y-3 gap-x-3">
-            <div>
-              <p className="text-white/70 text-[10px] uppercase tracking-wider">Total Pago (Global)</p>
-              <p className="text-white font-bold text-lg">{fmt(totalPagoGeral)}</p>
-            </div>
-            <div>
-              <p className="text-white/70 text-[10px] uppercase tracking-wider">Total Campanha</p>
-              <p className="text-white font-bold text-lg">{fmt(totalCampanhaGeral)}</p>
-            </div>
-            <div className="col-span-2 pt-2 border-t border-white/20">
-              <div className="flex justify-between items-center mb-1">
-                <p className="text-white/70 text-[10px] uppercase tracking-wider">Progresso Total</p>
-                <p className="text-white font-bold text-sm">{pctGeral.toFixed(0)}%</p>
-              </div>
-              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${pctGeral}%` }} />
-              </div>
-            </div>
-            <div className="col-span-2 pt-2 border-t border-white/20">
-              <p className="text-white/70 text-[10px] uppercase tracking-wider">Pago Neste Mês ({MESES[mes - 1]})</p>
-              <p className="text-white font-bold text-lg">{fmt(totalPagoMes)}</p>
-            </div>
-          </div>
+        {/* Busca */}
+        <div className="relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input value={busca} onChange={e => setBusca(e.target.value)}
+            placeholder="Buscar por nome..." className="pl-9 h-10 bg-card border-border rounded-xl text-sm" />
+          {busca && <button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setBusca("")}><X size={14} /></button>}
         </div>
 
-        {/* Lista de suplentes */}
-        {isLoading ? (
-          <CardSkeletonList count={4} />
-        ) : (
-          <div className="space-y-3">
-            {/* Campo de Pesquisa */}
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Pesquisar suplente por nome, região ou partido..."
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                className="pl-9 h-10 bg-card border-border rounded-xl text-sm"
-              />
-              {busca && (
-                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setBusca("")}>
-                  <X size={12} />
-                </Button>
-              )}
-            </div>
+        {/* Tabs filtro */}
+        <div className="flex bg-muted rounded-xl p-1 gap-1">
+          {abas.map(a => (
+            <button key={a.id} onClick={() => setFiltro(a.id)}
+              className={`flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold py-1.5 rounded-lg transition-all ${filtro === a.id ? "bg-card shadow text-primary" : "text-muted-foreground"}`}>
+              {a.icon}{a.label}
+              <span className={`text-[9px] px-1 py-0.5 rounded-full font-bold ml-0.5 ${filtro === a.id ? "bg-primary/10 text-primary" : "bg-muted-foreground/20"}`}>{a.count}</span>
+            </button>
+          ))}
+        </div>
 
-            <p className="text-xs text-muted-foreground">
-              {suplantesFiltrados.length} de {(suplentes || []).length} suplente(s) — {pagMes.length} pagamento(s) registrado(s) no mês
-            </p>
-            {suplantesFiltrados.map((s) => (
-              <SuplenteCard
-                key={s.id}
-                suplente={s}
-                pagamentos={pagamentos || []}
-                mes={mes}
-                ano={ano}
-              />
-            ))}
-            {suplantesFiltrados.length === 0 && busca && (
-              <div className="text-center py-8 text-muted-foreground text-sm">
-                Nenhum suplente encontrado para "{busca}"
+        {isLoading ? <CardSkeletonList count={5} /> : (
+          <>
+            {/* PENDENTES */}
+            {pendentes.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle size={14} className="text-amber-500" />
+                  <h2 className="text-sm font-bold text-foreground">Falta pagar — {pendentes.length}</h2>
+                  <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold ml-auto">
+                    {fmt(pendentes.reduce((a, p) => a + (p.valorEsperado - p.totalPagoMes), 0))}
+                  </span>
+                </div>
+                {pendentes.map(p => <PendenteCard key={`${p.tipo}-${p.id}`} {...p} mes={mes} ano={ano} />)}
               </div>
             )}
-          </div>
+
+            {pendentes.length === 0 && !busca && filtro === "todos" && pagos.length > 0 && (
+              <div className="flex items-center justify-center gap-2 bg-green-500/10 border border-green-500/30 rounded-2xl py-4">
+                <CheckCircle2 size={18} className="text-green-500" />
+                <p className="text-sm font-bold text-green-600 dark:text-green-400">
+                  Todos os pagamentos de {MESES[mes - 1]} registrados!
+                </p>
+              </div>
+            )}
+
+            {/* PAGOS */}
+            {pagos.length > 0 && (
+              <div className="space-y-2">
+                <button className="w-full flex items-center justify-between py-2 px-1" onClick={() => setShowPagos(!showPagos)}>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 size={14} className="text-green-500" />
+                    <h2 className="text-sm font-bold text-foreground">Pagos — {pagos.length}</h2>
+                    <span className="text-xs text-green-600 dark:text-green-400 font-semibold">{fmt(pagos.reduce((a, p) => a + p.totalPagoMes, 0))}</span>
+                  </div>
+                  {showPagos ? <ChevronUp size={15} className="text-muted-foreground" /> : <ChevronDown size={15} className="text-muted-foreground" />}
+                </button>
+                {showPagos && pagos.map(p => <PagoCard key={`${p.tipo}-${p.id}`} {...p} mes={mes} ano={ano} />)}
+              </div>
+            )}
+
+            {todasPessoas.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <Wallet size={32} className="mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Nenhuma pessoa com valor cadastrado</p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </PageTransition>

@@ -53,7 +53,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <span className="text-xs font-bold text-primary-foreground">FS</span>
             </div>
             <div>
-              <h1 className="text-sm font-bold text-foreground leading-tight">Painel de Suplentes</h1>
+              <h1 className="text-sm font-bold text-foreground leading-tight">Painel de Pagamentos</h1>
               <p className="text-[10px] text-muted-foreground">Dra. Fernanda Sarelli</p>
             </div>
           </div>

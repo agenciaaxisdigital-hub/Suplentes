@@ -16,6 +16,10 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Usuarios from "./pages/Usuarios";
 import Pagamentos from "./pages/Pagamentos";
+import ListaLiderancas from "./pages/ListaLiderancas";
+import CadastroLideranca from "./pages/CadastroLideranca";
+import ListaAdmin from "./pages/ListaAdmin";
+import CadastroAdmin from "./pages/CadastroAdmin";
 
 // â”€â”€â”€ QueryClient com suporte offline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const queryClient = new QueryClient({
@@ -124,6 +128,12 @@ const App = () => {
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/usuarios" element={<ProtectedRoute><Usuarios /></ProtectedRoute>} />
             <Route path="/pagamentos" element={<ProtectedRoute><Pagamentos /></ProtectedRoute>} />
+            <Route path="/liderancas" element={<ProtectedRoute><ListaLiderancas /></ProtectedRoute>} />
+            <Route path="/liderancas/novo" element={<ProtectedRoute><CadastroLideranca /></ProtectedRoute>} />
+            <Route path="/liderancas/:id" element={<ProtectedRoute><CadastroLideranca /></ProtectedRoute>} />
+            <Route path="/administrativo" element={<ProtectedRoute><ListaAdmin /></ProtectedRoute>} />
+            <Route path="/administrativo/novo" element={<ProtectedRoute><CadastroAdmin /></ProtectedRoute>} />
+            <Route path="/administrativo/:id" element={<ProtectedRoute><CadastroAdmin /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
