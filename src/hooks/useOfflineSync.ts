@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { db } from '@/lib/dexieDb';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -8,18 +8,38 @@ import { toast } from 'sonner';
  * Instanciar na barreira inicial do App.tsx ou Dashboard
  */
 export function useOfflineSync() {
-  useEffect(() => {
-    const processSyncQueue = async () => {
-      if (!navigator.onLine) return;
-      
+  const [syncing, setSyncing] = useState(false);
+  const syncingRef = useRef(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  const updateCount = useCallback(async () => {
+    try {
+      const count = await db.syncQueue.where('status').equals('PENDING').count();
+      setPendingCount(count);
+    } catch (err) {
+      console.error("Erro ao contar fila de sincronização:", err);
+    }
+  }, []);
+
+  const processSyncQueue = useCallback(async () => {
+    if (!navigator.onLine || syncingRef.current) return;
+    
+    // Evita múltiplas execuções simultâneas
+    syncingRef.current = true;
+    setSyncing(true);
+    
+    try {
       const pendingOperations = await db.syncQueue
         .where('status')
         .equals('PENDING')
         .toArray();
 
-      if (pendingOperations.length === 0) return;
+      if (pendingOperations.length === 0) {
+        setPendingCount(0);
+        return;
+      }
 
-      console.log(`📡 [Off-first] Iniciando sincronização de ${pendingOperations.length} operações em cache...`);
+      console.log(`📡 [Off-first] Iniciando sincronização de ${pendingOperations.length} operações...`);
       toast.info(`Sincronizando ${pendingOperations.length} registros salvos offline...`, { id: 'sync-progress', duration: 10000 });
 
       let successCount = 0;
@@ -82,23 +102,44 @@ export function useOfflineSync() {
       } else {
         toast.dismiss('sync-progress');
       }
+    } finally {
+      syncingRef.current = false;
+      setSyncing(false);
+      updateCount();
+    }
+  }, [updateCount]);
+
+  useEffect(() => {
+    updateCount();
+
+    // Hook para atualizar contador sempre que houver mudança no banco
+    db.syncQueue.hook('creating', () => { setTimeout(updateCount, 100); });
+    db.syncQueue.hook('updating', () => { setTimeout(updateCount, 100); });
+    db.syncQueue.hook('deleting', () => { setTimeout(updateCount, 100); });
+
+    const handleOnline = () => {
+      processSyncQueue();
     };
 
-    window.addEventListener('online', processSyncQueue);
+    window.addEventListener('online', handleOnline);
     
-    // Tenta quando o componente é montado
     if (navigator.onLine) {
       processSyncQueue();
     }
 
-    // Processamento estático em loop (a cada 5min) para caso o evento window falhe
     const interval = setInterval(() => {
        if (navigator.onLine) processSyncQueue();
     }, 5 * 60 * 1000);
 
     return () => {
-      window.removeEventListener('online', processSyncQueue);
+      window.removeEventListener('online', handleOnline);
       clearInterval(interval);
     };
-  }, []);
+  }, [processSyncQueue, updateCount]);
+
+  return { 
+    syncing, 
+    pendingCount, 
+    syncQueue: processSyncQueue 
+  };
 }
