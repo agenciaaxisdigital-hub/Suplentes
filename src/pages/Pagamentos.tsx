@@ -89,7 +89,7 @@ function QuickPayForm({ valorEsperado, onSave, onCancel, saving }: {
 }
 
 // ── Item histórico ─────────────────────────────────────────────────────────────
-function HistoricoItem({ p, onDelete }: { p: Pagamento; onDelete: (id: string) => void }) {
+function HistoricoItem({ p, onDelete, hideCat }: { p: Pagamento; onDelete: (id: string) => void; hideCat?: boolean }) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [valor, setValor] = useState(String(p.valor));
@@ -119,25 +119,30 @@ function HistoricoItem({ p, onDelete }: { p: Pagamento; onDelete: (id: string) =
       </div>
     </div>
   );
+  const dataReg = new Date(p.created_at).toLocaleDateString("pt-BR");
+  const descricao = p.observacao || (hideCat ? "Pagamento" : cats[p.categoria] || p.categoria);
+  const refMes = `${MESES[p.mes - 1]}/${p.ano}`;
   return (
-    <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/30 last:border-0">
-      <div className="min-w-0">
-        <span className="text-xs font-medium text-foreground">{cats[p.categoria] || p.categoria}</span>
-        {p.observacao && <span className="text-[10px] text-muted-foreground ml-2">{p.observacao}</span>}
-        <p className="text-[10px] text-muted-foreground">
-          {MESES[p.mes - 1]}/{p.ano} · {new Date(p.created_at).toLocaleDateString("pt-BR")}
+    <div className="flex items-center justify-between px-3 py-2 border-b border-border/30 last:border-0 gap-2">
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] text-muted-foreground leading-tight truncate">
+          <span className="text-foreground font-medium">{dataReg}</span>
+          <span className="mx-1 text-border">—</span>
+          <span>{descricao}</span>
+          <span className="mx-1 text-border">—</span>
+          <span className="text-primary/80">{refMes}</span>
         </p>
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <span className="text-sm font-bold text-green-600 dark:text-green-400">{fmt(p.valor)}</span>
-        <button onClick={() => setEditing(true)} className="p-1 text-muted-foreground"><Pencil size={11} /></button>
-        <button onClick={() => onDelete(p.id)} className="p-1 text-destructive"><Trash2 size={11} /></button>
+        <button onClick={() => setEditing(true)} className="p-1 text-muted-foreground hover:text-foreground"><Pencil size={11} /></button>
+        <button onClick={() => onDelete(p.id)} className="p-1 text-destructive hover:text-destructive/80"><Trash2 size={11} /></button>
       </div>
     </div>
   );
 }
 
-// ── Card Suplente — todas as categorias ───────────────────────────────────────
+// ── Card Suplente — todas as categorias sempre visíveis ──────────────────────
 function SuplenteCard({ suplente, pagamentosMes, todosPagamentos, mes, ano }: {
   suplente: Suplente; pagamentosMes: Pagamento[];
   todosPagamentos: Pagamento[]; mes: number; ano: number;
@@ -145,8 +150,8 @@ function SuplenteCard({ suplente, pagamentosMes, todosPagamentos, mes, ano }: {
   const qc = useQueryClient();
   const [payingCat, setPayingCat] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [showFicha, setShowFicha] = useState(false);
-  const [showHist, setShowHist] = useState(false);
+  const [showHistCat, setShowHistCat] = useState<Record<string, boolean>>({});
+  const toggleHistCat = (key: string) => setShowHistCat(prev => ({ ...prev, [key]: !prev[key] }));
 
   const pagsSupMes = pagamentosMes.filter(p => p.suplente_id === suplente.id);
   const pagsSupAll = todosPagamentos.filter(p => p.suplente_id === suplente.id);
@@ -156,33 +161,31 @@ function SuplenteCard({ suplente, pagamentosMes, todosPagamentos, mes, ano }: {
       key: "retirada", label: "Retirada Mensal",
       planejado: suplente.retirada_mensal_valor || 0,
       pago: pagsSupMes.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0),
-      isMensal: true,
+      badge: "mês",
     },
     {
       key: "plotagem", label: "Plotagem",
       planejado: (suplente.plotagem_qtd || 0) * (suplente.plotagem_valor_unit || 0),
       pago: pagsSupAll.filter(p => p.categoria === "plotagem").reduce((a, p) => a + p.valor, 0),
-      isMensal: false,
+      badge: "campanha",
     },
     {
-      key: "liderancas", label: "Lideranças Camp.",
+      key: "liderancas", label: "Lideranças",
       planejado: (suplente.liderancas_qtd || 0) * (suplente.liderancas_valor_unit || 0),
       pago: pagsSupAll.filter(p => p.categoria === "liderancas").reduce((a, p) => a + p.valor, 0),
-      isMensal: false,
+      badge: "campanha",
     },
     {
-      key: "fiscais", label: "Fiscais no Dia",
+      key: "fiscais", label: "Fiscais",
       planejado: (suplente.fiscais_qtd || 0) * (suplente.fiscais_valor_unit || 0),
       pago: pagsSupAll.filter(p => p.categoria === "fiscais").reduce((a, p) => a + p.valor, 0),
-      isMensal: false,
+      badge: "campanha",
     },
   ].filter(c => c.planejado > 0);
 
   const totalCampanha = categorias.reduce((a, c) => a + c.planejado, 0);
   const totalPagoAll = pagsSupAll.reduce((a, p) => a + p.valor, 0);
   const pctCampanha = totalCampanha > 0 ? Math.min(100, (totalPagoAll / totalCampanha) * 100) : 0;
-
-  // Suplente está pendente se retirada deste mês não foi paga
   const retiradaMes = categorias.find(c => c.key === "retirada");
   const retiradadaPendente = retiradaMes ? retiradaMes.pago < retiradaMes.planejado : false;
 
@@ -209,146 +212,113 @@ function SuplenteCard({ suplente, pagamentosMes, todosPagamentos, mes, ano }: {
     qc.invalidateQueries({ queryKey: ["pagamentos"] });
   };
 
-  const corBorda = retiradadaPendente ? "border-amber-500/30" : "border-green-500/20";
-
   return (
-    <div className={`bg-card rounded-2xl border shadow-sm overflow-hidden ${corBorda}`}>
-      {/* Header */}
+    <div className={`bg-card rounded-2xl border shadow-sm overflow-hidden ${retiradadaPendente ? "border-amber-500/30" : "border-green-500/20"}`}>
+      {/* Header com nome + barra campanha */}
       <div className="px-3 pt-3 pb-2">
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start justify-between gap-2 mb-1.5">
           <div className="min-w-0 flex-1">
             <p className="font-bold text-foreground text-sm leading-tight">{suplente.nome}</p>
             {(suplente.regiao_atuacao || suplente.partido) && (
-              <p className="text-[11px] text-muted-foreground mt-0.5">
+              <p className="text-[11px] text-muted-foreground">
                 {[suplente.regiao_atuacao, suplente.partido].filter(Boolean).join(" · ")}
               </p>
             )}
           </div>
           <div className="text-right shrink-0">
-            {retiradadaPendente
-              ? <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Retirada pendente</span>
-              : <span className="flex items-center gap-1 text-[10px] font-bold text-green-600 dark:text-green-400"><CheckCircle2 size={10} />Retirada OK</span>
-            }
-            <p className="text-[9px] text-muted-foreground mt-0.5">{pctCampanha.toFixed(0)}% campanha</p>
+            <p className="text-xs font-bold text-foreground">{pctCampanha.toFixed(0)}%</p>
+            <p className="text-[9px] text-muted-foreground">de {fmt(totalCampanha)}</p>
           </div>
         </div>
-        <div className="mt-1.5">
-          <Bar pago={totalPagoAll} total={totalCampanha}
-            cor={pctCampanha >= 100 ? "bg-green-500" : pctCampanha > 50 ? "bg-primary" : "bg-amber-500"} />
-          <div className="flex justify-between mt-0.5">
-            <span className="text-[10px] text-green-600 dark:text-green-400">{fmt(totalPagoAll)} pago total</span>
-            <span className="text-[10px] text-muted-foreground">/ {fmt(totalCampanha)}</span>
-          </div>
+        <Bar pago={totalPagoAll} total={totalCampanha}
+          cor={pctCampanha >= 100 ? "bg-green-500" : pctCampanha > 50 ? "bg-primary" : "bg-amber-500"} />
+        <div className="flex justify-between mt-0.5">
+          <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">{fmt(totalPagoAll)} pago</span>
+          {totalCampanha - totalPagoAll > 0 &&
+            <span className="text-[10px] text-muted-foreground">falta {fmt(totalCampanha - totalPagoAll)}</span>}
         </div>
       </div>
 
-      {/* Categorias — expandidas na ficha */}
-      {showFicha && (
-        <div className="border-t border-border/30 divide-y divide-border/20 bg-muted/5">
-          {categorias.map(cat => {
-            const falta = Math.max(0, cat.planejado - cat.pago);
-            const pct = cat.planejado > 0 ? Math.min(100, (cat.pago / cat.planejado) * 100) : 0;
-            const quitado = falta <= 0;
-            const isPayingThis = payingCat === cat.key;
-            return (
-              <div key={cat.key}>
-                <div className="px-3 py-2.5">
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-[10px] font-bold text-foreground/80 uppercase tracking-wide">{cat.label}</span>
-                        {cat.isMensal && <span className="text-[9px] bg-primary/10 text-primary px-1 rounded">mês</span>}
-                        {!cat.isMensal && <span className="text-[9px] bg-muted text-muted-foreground px-1 rounded">campanha</span>}
-                        {quitado && <CheckCircle2 size={10} className="text-green-500" />}
-                      </div>
-                      <Bar pago={cat.pago} total={cat.planejado}
-                        cor={quitado ? "bg-green-500" : pct > 0 ? "bg-amber-500" : "bg-muted-foreground/30"} />
-                      <div className="flex justify-between mt-0.5">
-                        <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">✓ {fmt(cat.pago)}</span>
-                        <span className="text-[10px] text-muted-foreground">/ {fmt(cat.planejado)}</span>
-                      </div>
-                      {!quitado && <span className="text-[10px] text-amber-600 dark:text-amber-400">⏳ falta {fmt(falta)}</span>}
+      {/* Todas as categorias sempre visíveis */}
+      <div className="border-t border-border/30 divide-y divide-border/20">
+        {categorias.map(cat => {
+          const falta = Math.max(0, cat.planejado - cat.pago);
+          const pct = cat.planejado > 0 ? Math.min(100, (cat.pago / cat.planejado) * 100) : 0;
+          const quitado = falta <= 0;
+          const isPayingThis = payingCat === cat.key;
+          const catPags = [...pagsSupAll.filter(p => p.categoria === cat.key)]
+            .sort((a, b) => b.created_at.localeCompare(a.created_at));
+          const histOpen = showHistCat[cat.key] ?? false;
+          return (
+            <div key={cat.key}>
+              <div className="px-3 py-2">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-foreground">{cat.label}</span>
+                      <span className={`text-[9px] px-1 rounded font-medium ${cat.badge === "mês" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        {cat.badge}
+                      </span>
+                      {quitado && <CheckCircle2 size={11} className="text-green-500" />}
                     </div>
-                    {!quitado && (
-                      <button
-                        onClick={() => setPayingCat(isPayingThis ? null : cat.key)}
-                        className={`shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-xl transition-colors ${
-                          isPayingThis ? "bg-muted text-muted-foreground" : "bg-gradient-to-r from-pink-500 to-rose-400 text-white"
-                        }`}
-                      >
-                        {isPayingThis ? "✕" : "Pagar"}
-                      </button>
-                    )}
                   </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-xs font-bold text-foreground">{fmt(cat.pago)}</span>
+                    <span className="text-[10px] text-muted-foreground"> / {fmt(cat.planejado)}</span>
+                  </div>
+                  {!quitado && (
+                    <button
+                      onClick={() => setPayingCat(isPayingThis ? null : cat.key)}
+                      className={`shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-xl transition-colors ${
+                        isPayingThis ? "bg-muted text-muted-foreground" : "bg-gradient-to-r from-pink-500 to-rose-400 text-white"
+                      }`}
+                    >
+                      {isPayingThis ? "✕" : "Pagar"}
+                    </button>
+                  )}
+                  {quitado && (
+                    <button
+                      onClick={() => setPayingCat(isPayingThis ? null : cat.key)}
+                      className="shrink-0 text-[10px] font-semibold px-2 py-1 rounded-lg border border-primary/30 text-primary hover:bg-primary/5"
+                    >
+                      {isPayingThis ? "✕" : "+ Pagar"}
+                    </button>
+                  )}
                 </div>
-                {isPayingThis && (
-                  <QuickPayForm
-                    valorEsperado={falta}
-                    onSave={(valor, obs) => handleSave(cat.key, valor, obs)}
-                    onCancel={() => setPayingCat(null)}
-                    saving={saving}
-                  />
-                )}
+                <Bar pago={cat.pago} total={cat.planejado}
+                  cor={quitado ? "bg-green-500" : pct > 0 ? "bg-amber-500" : "bg-muted-foreground/20"} />
+                <div className="flex items-center justify-between mt-0.5">
+                  {!quitado
+                    ? <p className="text-[10px] text-amber-600 dark:text-amber-400">⏳ falta {fmt(falta)}</p>
+                    : <span />
+                  }
+                  {catPags.length > 0 && (
+                    <button onClick={() => toggleHistCat(cat.key)}
+                      className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-foreground">
+                      <Receipt size={10} /> {catPags.length} reg. {histOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                    </button>
+                  )}
+                </div>
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Pagamento rápido da retirada (quando não está em ficha) */}
-      {!showFicha && payingCat === "retirada" && retiradaMes && (
-        <QuickPayForm
-          valorEsperado={Math.max(0, retiradaMes.planejado - retiradaMes.pago)}
-          onSave={(valor, obs) => handleSave("retirada", valor, obs)}
-          onCancel={() => setPayingCat(null)}
-          saving={saving}
-        />
-      )}
-
-      {/* Ações */}
-      <div className="flex border-t border-border/30 divide-x divide-border/30">
-        {retiradadaPendente && !showFicha && (
-          <button
-            onClick={() => setPayingCat(payingCat === "retirada" ? null : "retirada")}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold bg-gradient-to-r from-pink-500 to-rose-400 text-white"
-          >
-            $ Pagar
-          </button>
-        )}
-        {!retiradadaPendente && !showFicha && (
-          <button
-            onClick={() => setPayingCat(payingCat === "retirada" ? null : "retirada")}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-primary font-semibold hover:bg-primary/5"
-          >
-            $ + Pagamento
-          </button>
-        )}
-        <button
-          onClick={() => { setShowFicha(!showFicha); setShowHist(false); setPayingCat(null); }}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-primary font-semibold hover:bg-primary/5"
-        >
-          <Receipt size={12} /> Ficha {showFicha ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-        </button>
-      </div>
-
-      {/* Histórico completo */}
-      {showFicha && pagsSupAll.length > 0 && (
-        <>
-          <button
-            onClick={() => setShowHist(!showHist)}
-            className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] text-muted-foreground border-t border-border/30 hover:bg-muted/20"
-          >
-            Histórico completo ({pagsSupAll.length}) {showHist ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-          </button>
-          {showHist && (
-            <div className="bg-muted/10 border-t border-border/30">
-              {[...pagsSupAll].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 30).map(p => (
-                <HistoricoItem key={p.id} p={p} onDelete={handleDelete} />
-              ))}
+              {isPayingThis && (
+                <QuickPayForm
+                  valorEsperado={falta}
+                  onSave={(valor, obs) => handleSave(cat.key, valor, obs)}
+                  onCancel={() => setPayingCat(null)}
+                  saving={saving}
+                />
+              )}
+              {histOpen && catPags.length > 0 && (
+                <div className="bg-muted/10 border-t border-border/30">
+                  {catPags.map(p => (
+                    <HistoricoItem key={p.id} p={p} onDelete={handleDelete} hideCat />
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -371,9 +341,10 @@ function PessoaCard({ tipo, id, nome, subtitulo, valorEsperado, mesesCampanha, t
   const tipoColor = tipo === "lideranca" ? "text-violet-500 bg-violet-500/10" : "text-blue-500 bg-blue-500/10";
   const tipoLabel = tipo === "lideranca" ? "Liderança" : "Admin";
   const totalCampanha = valorEsperado * mesesCampanha;
-  const totalPagoAll = (todosPagamentos || []).filter(p =>
+  const todasPagsP = (todosPagamentos || []).filter(p =>
     tipo === "lideranca" ? p.lideranca_id === id : p.admin_id === id
-  ).reduce((a, p) => a + p.valor, 0);
+  );
+  const totalPagoAll = todasPagsP.reduce((a, p) => a + p.valor, 0);
   const pctCampanha = totalCampanha > 0 ? Math.min(100, (totalPagoAll / totalCampanha) * 100) : 0;
 
   const handleSave = async (valor: number, obs: string) => {
@@ -467,17 +438,19 @@ function PessoaCard({ tipo, id, nome, subtitulo, valorEsperado, mesesCampanha, t
             $ + Pagamento
           </button>
         )}
-        {pagamentosMes.length > 0 && (
+        {todasPagsP.length > 0 && (
           <button onClick={() => setShowHist(!showHist)}
             className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-muted-foreground hover:bg-muted/20">
-            <Receipt size={11} /> {pagamentosMes.length} pag. {showHist ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+            <Receipt size={11} /> {todasPagsP.length} reg. {showHist ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
           </button>
         )}
       </div>
 
       {showHist && (
         <div className="bg-muted/10 border-t border-border/30">
-          {pagamentosMes.map(p => <HistoricoItem key={p.id} p={p} onDelete={handleDelete} />)}
+          {[...todasPagsP].sort((a, b) => b.created_at.localeCompare(a.created_at)).map(p => (
+            <HistoricoItem key={p.id} p={p} onDelete={handleDelete} />
+          ))}
         </div>
       )}
     </div>
