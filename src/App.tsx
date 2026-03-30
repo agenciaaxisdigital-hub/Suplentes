@@ -80,6 +80,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 import VersionMonitor from "./components/VersionMonitor";
+import InstallPWA from "./components/InstallPWA";
 import { useOfflineSync } from "./hooks/useOfflineSync";
 
 function GlobalOfflineSync() {
@@ -110,6 +111,7 @@ const App = () => {
     >
       <TooltipProvider>
         <GlobalOfflineSync />
+        <InstallPWA />
         <VersionMonitor />
         <Toaster />
         <Sonner />
