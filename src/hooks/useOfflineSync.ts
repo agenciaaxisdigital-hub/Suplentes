@@ -1,80 +1,104 @@
-// Processa a fila offline quando a conexão retorna
-import { useEffect, useState, useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useOnlineStatus } from "./useOnlineStatus";
-import { getQueue, dequeue, queueLength } from "@/lib/offlineQueue";
-import { toast } from "@/hooks/use-toast";
+import { useEffect } from 'react';
+import { db } from '@/lib/dexieDb';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
+/**
+ * Hook de sincronização assíncrona.
+ * Instanciar na barreira inicial do App.tsx ou Dashboard
+ */
 export function useOfflineSync() {
-  const qc = useQueryClient();
-  const isOnline = useOnlineStatus();
-  const [syncing, setSyncing] = useState(false);
-  const [pendingCount, setPendingCount] = useState(() => queueLength());
+  useEffect(() => {
+    const processSyncQueue = async () => {
+      if (!navigator.onLine) return;
+      
+      const pendingOperations = await db.syncQueue
+        .where('status')
+        .equals('PENDING')
+        .toArray();
 
-  const syncQueue = useCallback(async () => {
-    const queue = getQueue();
-    if (queue.length === 0) return;
+      if (pendingOperations.length === 0) return;
 
-    setSyncing(true);
-    let successCount = 0;
-    let errorCount = 0;
+      console.log(`📡 [Off-first] Iniciando sincronização de ${pendingOperations.length} operações em cache...`);
+      toast.info(`Sincronizando ${pendingOperations.length} registros salvos offline...`, { id: 'sync-progress', duration: 10000 });
 
-    for (const op of queue) {
-      try {
-        let error: unknown = null;
+      let successCount = 0;
+      let errorCount = 0;
 
-        if (op.operation === "insert") {
-          ({ error } = await supabase.from(op.table as "suplentes").insert(op.data as never));
-        } else if (op.operation === "update" && op.filter) {
-          ({ error } = await supabase
-            .from(op.table as "suplentes")
-            .update(op.data as never)
-            .eq(op.filter.column, op.filter.value));
-        } else if (op.operation === "delete" && op.filter) {
-          ({ error } = await supabase
-            .from(op.table as "suplentes")
-            .delete()
-            .eq(op.filter.column, op.filter.value));
-        }
+      for (const op of pendingOperations) {
+        try {
+          let error = null;
 
-        if (error) {
-          errorCount++;
-        } else {
-          dequeue(op.id);
+          switch (op.action) {
+            case 'INSERT': {
+              const res = await supabase.from(op.table as any).insert(op.payload);
+              error = res.error;
+              break;
+            }
+            case 'UPDATE': {
+              const req = supabase.from(op.table as any).update(op.payload);
+              if (op.matchKey) {
+                const reqMatch = req.match(op.matchKey);
+                const res = await reqMatch;
+                error = res.error;
+              } else {
+                 throw new Error("MatchKey missing in UPDATE");
+              }
+              break;
+            }
+            case 'DELETE': {
+              if (op.matchKey) {
+                const res = await supabase.from(op.table as any).delete().match(op.matchKey);
+                error = res.error;
+              }
+              break;
+            }
+            case 'RPC': {
+              const res = await supabase.rpc(op.table as any, op.payload);
+              error = res.error;
+              break;
+            }
+          }
+
+          if (error) throw error;
+          
+          await db.syncQueue.delete(op.id!);
           successCount++;
+        } catch (err: any) {
+           console.error('[Off-first] Falha em operação na fila:', err);
+           errorCount++;
+           await db.syncQueue.update(op.id!, { 
+             status: 'ERROR', 
+             errorMessage: err.message,
+             retryCount: op.retryCount + 1 
+           });
         }
-      } catch {
-        errorCount++;
       }
+
+      if (successCount > 0) {
+        toast.success(`Tudo atualizado! ${successCount} registros subiram pra nuvem.`, { id: 'sync-progress' });
+      } else if (errorCount > 0) {
+        toast.error(`Falha ao sincronizar ${errorCount} registros (Verifique logs)`, { id: 'sync-progress' });
+      } else {
+        toast.dismiss('sync-progress');
+      }
+    };
+
+    window.addEventListener('online', processSyncQueue);
+    
+    // Tenta quando o componente é montado
+    if (navigator.onLine) {
+      processSyncQueue();
     }
 
-    setSyncing(false);
-    setPendingCount(queueLength());
+    // Processamento estático em loop (a cada 5min) para caso o evento window falhe
+    const interval = setInterval(() => {
+       if (navigator.onLine) processSyncQueue();
+    }, 5 * 60 * 1000);
 
-    // Recarrega dados do servidor
-    qc.invalidateQueries({ queryKey: ["suplentes"] });
-    qc.invalidateQueries({ queryKey: ["pagamentos"] });
-
-    if (successCount > 0) {
-      toast({
-        title: `✅ ${successCount} operação(ões) sincronizada(s)!`,
-        description: errorCount > 0 ? `${errorCount} falharam e serão tentadas novamente.` : "Dados atualizados com sucesso.",
-      });
-    }
-  }, [qc]);
-
-  // Dispara sync automático quando voltar a conexão
-  useEffect(() => {
-    if (isOnline && queueLength() > 0) {
-      syncQueue();
-    }
-  }, [isOnline, syncQueue]);
-
-  // Atualiza contador quando muda
-  useEffect(() => {
-    setPendingCount(queueLength());
-  }, [isOnline]);
-
-  return { syncing, pendingCount, syncQueue };
+    return () => {
+      window.removeEventListener('online', processSyncQueue);
+      clearInterval(interval);
+    };
+  }, []);
 }

@@ -74,13 +74,18 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const email = username.includes("@")
+    let email = username.includes("@")
       ? username
-      : username.toLowerCase().replace(/\s+/g, "") + EMAIL_DOMAIN;
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+      : username.toLowerCase().replace(/\s+/g, "") + "@sistema.local";
+      
+    let { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    // Fallback para usuários antigos
+    if (error && !username.includes("@")) {
+      const emailLegacy = username.toLowerCase().replace(/\s+/g, "") + EMAIL_DOMAIN;
+      const legacyAttempt = await supabase.auth.signInWithPassword({ email: emailLegacy, password });
+      error = legacyAttempt.error;
+    }
     setLoading(false);
     if (error) {
       toast({

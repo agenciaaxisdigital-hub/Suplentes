@@ -3,6 +3,8 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { VitePWA } from "vite-plugin-pwa";
 
+process.env.VITE_APP_VERSION = Date.now().toString(36).toUpperCase();
+
 export default defineConfig(() => ({
   server: {
     host: "::",
@@ -15,6 +17,7 @@ export default defineConfig(() => ({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: "auto",
       includeAssets: ["icon-192.png", "icon-512.png"],
       manifest: {
         name: "Suplentes - Dra. Fernanda Sarelli",
@@ -42,6 +45,8 @@ export default defineConfig(() => ({
         ],
       },
       workbox: {
+        clientsClaim: true,
+        skipWaiting: true,
         navigateFallbackDenylist: [/^\/~oauth/],
         maximumFileSizeToCacheInBytes: 5000000,
         // Cache de assets estáticos (JS, CSS, imagens)

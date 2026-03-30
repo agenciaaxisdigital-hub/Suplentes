@@ -34,12 +34,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const email = username.toLowerCase().replace(/\s+/g, "") + "@painel.sarelli.com";
+    const email = username.toLowerCase().replace(/\s+/g, "") + "@sistema.local";
 
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true,
+      email_confirm: false,
     });
 
     if (error) {

@@ -79,6 +79,14 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 
+import VersionMonitor from "./components/VersionMonitor";
+import { useOfflineSync } from "./hooks/useOfflineSync";
+
+function GlobalOfflineSync() {
+  useOfflineSync();
+  return null;
+}
+
 const App = () => {
   const [showSplash, setShowSplash] = useState(() => {
     if (sessionStorage.getItem("splash_shown")) return false;
@@ -93,9 +101,7 @@ const App = () => {
       client={queryClient}
       persistOptions={{
         persister,
-        // Dados persistidos são considerados válidos por 24h
         maxAge: 1000 * 60 * 60 * 24,
-        // Não bycota o cache quando volta online — mantém dados e re-fetcha em background
         dehydrateOptions: {
           shouldDehydrateQuery: (query) =>
             query.state.status === "success",
@@ -103,6 +109,8 @@ const App = () => {
       }}
     >
       <TooltipProvider>
+        <GlobalOfflineSync />
+        <VersionMonitor />
         <Toaster />
         <Sonner />
         {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
