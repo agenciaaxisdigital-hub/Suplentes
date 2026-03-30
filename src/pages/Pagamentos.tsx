@@ -491,7 +491,7 @@ export default function Pagamentos() {
   const [ano, setAno] = useState(now.getFullYear());
   const [aba, setAba] = useState<Aba>("suplentes");
   const [busca, setBusca] = useState("");
-  const [showPagos, setShowPagos] = useState(false);
+  const [showPagos, setShowPagos] = useState(true);
 
   const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes"],
@@ -540,6 +540,8 @@ export default function Pagamentos() {
   const navMes = (dir: -1 | 1) => {
     let m = mes + dir, a = ano;
     if (m < 1) { m = 12; a--; } if (m > 12) { m = 1; a++; }
+    // Não permite navegar antes de fevereiro/2026
+    if (a < 2026 || (a === 2026 && m < 2)) return;
     setMes(m); setAno(a);
   };
 
@@ -684,7 +686,7 @@ export default function Pagamentos() {
         {/* Tabs */}
         <div className="flex bg-muted rounded-xl p-1 gap-1">
           {abas.map(a => (
-            <button key={a.id} onClick={() => { setAba(a.id); setShowPagos(false); }}
+            <button key={a.id} onClick={() => { setAba(a.id); setShowPagos(true); }}
               className={`flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold py-1.5 rounded-lg transition-all ${aba === a.id ? "bg-card shadow text-primary" : "text-muted-foreground"}`}>
               {a.icon}{a.label}
               <span className={`text-[9px] px-1 py-0.5 rounded-full font-bold ml-0.5 ${aba === a.id ? "bg-primary/10 text-primary" : "bg-muted-foreground/20"}`}>{a.count}</span>
@@ -718,10 +720,12 @@ export default function Pagamentos() {
             {/* PENDENTES */}
             {pendentes > 0 && (
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <AlertCircle size={14} className="text-amber-500" />
-                  <h2 className="text-sm font-bold text-foreground">Falta pagar — {pendentes}</h2>
-                  <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold ml-auto">
+                <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2">
+                  <AlertCircle size={14} className="text-amber-500 shrink-0" />
+                  <h2 className="text-sm font-bold text-amber-700 dark:text-amber-400 flex-1">
+                    Falta pagar — {pendentes} {pendentes === 1 ? "pessoa" : "pessoas"}
+                  </h2>
+                  <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
                     {aba === "suplentes" && fmt(supsPendentes.reduce((a, s) => a + Math.max(0, (s.retirada_mensal_valor || 0) - pagsMes.filter(p => p.suplente_id === s.id && p.categoria === "retirada").reduce((b, p) => b + p.valor, 0)), 0))}
                     {aba === "liderancas" && fmt(lidsPendentes.reduce((a, l) => a + Math.max(0, (l.retirada_mensal_valor || 0) - pagsMes.filter(p => p.lideranca_id === l.id).reduce((b, p) => b + p.valor, 0)), 0))}
                     {aba === "admin" && fmt(admPendentes.reduce((a, p) => a + Math.max(0, (p.valor_contrato || 0) - pagsMes.filter(pg => pg.admin_id === p.id).reduce((b, pg) => b + pg.valor, 0)), 0))}
@@ -763,13 +767,19 @@ export default function Pagamentos() {
             {/* PAGOS */}
             {pagosCnt > 0 && (
               <div className="space-y-2">
-                <button className="w-full flex items-center justify-between py-2 px-1"
+                <button
+                  className="w-full flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-3 py-2"
                   onClick={() => setShowPagos(!showPagos)}>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 size={14} className="text-green-500" />
-                    <h2 className="text-sm font-bold text-foreground">Pagos — {pagosCnt}</h2>
-                  </div>
-                  {showPagos ? <ChevronUp size={15} className="text-muted-foreground" /> : <ChevronDown size={15} className="text-muted-foreground" />}
+                  <CheckCircle2 size={14} className="text-green-500 shrink-0" />
+                  <h2 className="text-sm font-bold text-green-700 dark:text-green-400 flex-1 text-left">
+                    Pagos — {pagosCnt} {pagosCnt === 1 ? "pessoa" : "pessoas"}
+                  </h2>
+                  <span className="text-sm font-bold text-green-600 dark:text-green-400 mr-1">
+                    {aba === "suplentes" && fmt(supsPagos.reduce((a, s) => a + pagsMes.filter(p => p.suplente_id === s.id).reduce((b, p) => b + p.valor, 0), 0))}
+                    {aba === "liderancas" && fmt(lidsPagos.reduce((a, l) => a + pagsMes.filter(p => p.lideranca_id === l.id).reduce((b, p) => b + p.valor, 0), 0))}
+                    {aba === "admin" && fmt(admPagos.reduce((a, p) => a + pagsMes.filter(pg => pg.admin_id === p.id).reduce((b, pg) => b + pg.valor, 0), 0))}
+                  </span>
+                  {showPagos ? <ChevronUp size={15} className="text-green-500" /> : <ChevronDown size={15} className="text-green-500" />}
                 </button>
 
                 {showPagos && aba === "suplentes" && supsPagos.map(s => (
