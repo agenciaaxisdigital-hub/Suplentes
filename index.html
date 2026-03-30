@@ -2,27 +2,48 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
+
+    <!-- Viewport: cobre toda a tela incluindo notch/dynamic island -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    
+
     <title>Suplentes - Dra. Fernanda Sarelli</title>
-    <meta name="description" content="Banco de Suplentes e Equipes" />
-    
-    <!-- PWA -->
+    <meta name="description" content="Painel de Suplentes e Equipes de Campanha" />
+
+    <!-- ── PWA core ── -->
     <meta name="theme-color" content="#ec4899" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- ── iOS / Safari PWA ── -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Suplentes" />
-    <link rel="apple-touch-icon" href="/icon-192.png" />
-    <link rel="apple-touch-icon" href="/icon-192.png" />
-    <link rel="icon" type="image/png" href="/icon-192.png" />
-    
-    <!-- Prevent phone number detection -->
-    <meta name="format-detection" content="telephone=no" />
-    
-    <!-- OG -->
+    <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
+
+    <!-- ── Ícone geral ── -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+
+    <!-- ── Comportamento nativo ── -->
+    <!-- Impede detecção automática de telefone/e-mail como link -->
+    <meta name="format-detection" content="telephone=no, email=no, address=no" />
+    <!-- Desativa callout nativo ao pressionar e segurar no iOS -->
+    <meta name="touch-callout" content="none" />
+
+    <!-- ── Open Graph ── -->
     <meta property="og:title" content="Suplentes - Dra. Fernanda Sarelli" />
-    <meta property="og:description" content="Banco de Suplentes e Equipes" />
+    <meta property="og:description" content="Painel de Suplentes e Equipes de Campanha" />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icon-512.png" />
+
+    <style>
+      /* Elimina flash branco no carregamento */
+      html, body { background: #070510; margin: 0; padding: 0; }
+      /* Previne scroll bounce global no iOS */
+      body { overscroll-behavior: none; -webkit-overflow-scrolling: auto; }
+      /* Desativa seleção de texto em toda a UI (comportamento nativo) */
+      * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+    </style>
   </head>
 
   <body style="background:#070510;margin:0">

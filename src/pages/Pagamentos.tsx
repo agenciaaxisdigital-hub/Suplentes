@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { PageTransition } from "@/components/PageTransition";
 import { CardSkeletonList } from "@/components/CardSkeleton";
-import { ChevronDown, ChevronUp, Plus, Trash2, X, Loader2, Wallet, ChevronLeft, ChevronRight, Calculator, Save, Pencil, Search, CheckCircle2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Trash2, X, Loader2, Wallet, ChevronLeft, ChevronRight, Calculator, Save, Pencil, Search, CheckCircle2, AlertCircle } from "lucide-react";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 
 const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -62,7 +62,10 @@ function BaixaCategoryRow({
   const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [registrado, setRegistrado] = useState(false);
-  
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [autoSaved, setAutoSaved] = useState(false);
+  const isFirstRender = useRef(true);
+
   const [val1, setVal1] = useState(
     categoria === "retirada" ? suplente.retirada_mensal_valor :
     categoria === "plotagem" ? suplente.plotagem_qtd :
@@ -76,14 +79,14 @@ function BaixaCategoryRow({
     categoria === "liderancas" ? suplente.liderancas_valor_unit :
     categoria === "fiscais" ? suplente.fiscais_valor_unit : 0
   );
-  
+
   const total = Number(val1) * Number(val2);
   const label1 = categoria === "retirada" ? "Valor Mensal (R$)" : "Qtd";
   const label2 = categoria === "retirada" ? "Meses Totais" : "Valor Unit. (R$)";
-  
+
   // Limite máximo = valor da retirada mensal (para retirada) ou total da categoria
   const limiteMax = categoria === "retirada" ? Number(val1) : total;
-  
+
   // Sugestão padrão de pagamento
   const defaultPagamento = categoria === "retirada" ? val1 : total;
   const [valorPago, setValorPago] = useState(defaultPagamento > 0 ? String(defaultPagamento) : "");
@@ -92,6 +95,46 @@ function BaixaCategoryRow({
     const sug = categoria === "retirada" ? val1 : (val1 * val2);
     setValorPago(sug > 0 ? String(sug) : "");
   }, [val1, val2, categoria]);
+
+  // Auto-save debounced: salva no banco 800ms após o usuário parar de digitar
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const updateData: Record<string, number> = {};
+    if (categoria === "retirada") {
+      updateData.retirada_mensal_valor = Number(val1);
+      updateData.retirada_mensal_meses = Number(val2);
+    } else if (categoria === "plotagem") {
+      updateData.plotagem_qtd = Number(val1);
+      updateData.plotagem_valor_unit = Number(val2);
+    } else if (categoria === "liderancas") {
+      updateData.liderancas_qtd = Number(val1);
+      updateData.liderancas_valor_unit = Number(val2);
+    } else if (categoria === "fiscais") {
+      updateData.fiscais_qtd = Number(val1);
+      updateData.fiscais_valor_unit = Number(val2);
+    }
+    const retiradaV = categoria === "retirada" ? Number(val1) * Number(val2) : suplente.retirada_mensal_valor * suplente.retirada_mensal_meses;
+    const plotagemV = categoria === "plotagem" ? Number(val1) * Number(val2) : suplente.plotagem_qtd * suplente.plotagem_valor_unit;
+    const liderancasV = categoria === "liderancas" ? Number(val1) * Number(val2) : suplente.liderancas_qtd * suplente.liderancas_valor_unit;
+    const fiscaisV = categoria === "fiscais" ? Number(val1) * Number(val2) : suplente.fiscais_qtd * suplente.fiscais_valor_unit;
+    updateData.total_campanha = retiradaV + plotagemV + liderancasV + fiscaisV;
+
+    setAutoSaving(true);
+    setAutoSaved(false);
+    const timer = setTimeout(async () => {
+      const { error } = await supabase.from("suplentes").update(updateData).eq("id", suplente.id);
+      setAutoSaving(false);
+      if (!error) {
+        setAutoSaved(true);
+        qc.invalidateQueries({ queryKey: ["suplentes"] });
+        setTimeout(() => setAutoSaved(false), 2000);
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [val1, val2]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Validação: valor digitado vs total permitido
   const valorDigitado = parseFloat((valorPago || "0").replace(",", ".")) || 0;
@@ -109,26 +152,6 @@ function BaixaCategoryRow({
     }
     
     setSaving(true);
-    let errorUpdate = false;
-    
-    // Atualiza cadastro se o usuário tiver alterado qtd/valor unit
-    const updateData: any = {};
-    if (categoria === "retirada") {
-      updateData.retirada_mensal_valor = val1;
-      updateData.retirada_mensal_meses = val2;
-    } else if (categoria === "plotagem") {
-      updateData.plotagem_qtd = val1;
-      updateData.plotagem_valor_unit = val2;
-    } else if (categoria === "liderancas") {
-      updateData.liderancas_qtd = val1;
-      updateData.liderancas_valor_unit = val2;
-    } else if (categoria === "fiscais") {
-      updateData.fiscais_qtd = val1;
-      updateData.fiscais_valor_unit = val2;
-    }
-    
-    const { error: errUpdate } = await supabase.from("suplentes").update(updateData).eq("id", suplente.id);
-    if (errUpdate) errorUpdate = true;
 
     // Constrói detalhamento
     let obsFinal = "";
@@ -145,7 +168,7 @@ function BaixaCategoryRow({
     });
     
     setSaving(false);
-    if (error || errorUpdate) {
+    if (error) {
        toast({ title: "Erro ao registrar", description: error?.message, variant: "destructive" });
     } else {
        toast({ title: "✅ Pagamento registrado!", description: `${label}: ${fmt(v)}` });
@@ -162,9 +185,21 @@ function BaixaCategoryRow({
     <div className={`rounded-xl p-3 space-y-3 shadow-sm border mt-3 transition-all ${registrado ? 'bg-green-500/10 border-green-500/40' : 'bg-muted/30 border-border'}`}>
       <div className="flex justify-between items-center text-sm">
         <span className="font-semibold text-foreground">{label}</span>
-        <span className="font-bold text-primary">Total: {fmt(total)}</span>
+        <div className="flex items-center gap-2">
+          {autoSaving && (
+            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+              <Loader2 size={10} className="animate-spin" /> salvando...
+            </span>
+          )}
+          {autoSaved && (
+            <span className="text-[10px] text-green-500 flex items-center gap-1">
+              <CheckCircle2 size={10} /> salvo
+            </span>
+          )}
+          <span className="font-bold text-primary">Total: {fmt(total)}</span>
+        </div>
       </div>
-      
+
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">{label1}</Label>
@@ -381,9 +416,16 @@ function SuplenteCard({
   const totalCampanha = calcTotaisFinanceiros(suplente).totalFinal;
   const saldo = totalCampanha - totalPagoGlobal;
   const pct = totalCampanha > 0 ? Math.min(100, (totalPagoGlobal / totalCampanha) * 100) : 0;
-  
+
   // Totais do mês para interface
   const totalPagoNoMes = pagamentosDoMes.reduce((a, p) => a + (p.valor || 0), 0);
+
+  // Status de retirada no mês
+  const retiradaPagaNoMes = pagamentosDoMes.some(p => p.categoria === "retirada");
+  const valorRetiradaPagaNoMes = pagamentosDoMes
+    .filter(p => p.categoria === "retirada")
+    .reduce((a, p) => a + (p.valor || 0), 0);
+  const temRetirada = suplente.retirada_mensal_valor > 0;
 
   const handleDelete = async (id: string) => {
     if (!confirm("Excluir este pagamento?")) return;
@@ -407,6 +449,18 @@ function SuplenteCard({
             {suplente.regiao_atuacao && (
               <p className="text-[11px] text-muted-foreground">{suplente.regiao_atuacao}</p>
             )}
+            {/* Badge de status da retirada mensal */}
+            {temRetirada && (
+              retiradaPagaNoMes ? (
+                <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-500/10 border border-green-500/30 rounded-full px-2 py-0.5">
+                  <CheckCircle2 size={9} /> Retirada Paga {fmt(valorRetiradaPagaNoMes)}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-2 py-0.5">
+                  <AlertCircle size={9} /> Retirada Pendente {fmt(suplente.retirada_mensal_valor)}
+                </span>
+              )
+            )}
           </div>
           <Button
             size="sm"
@@ -414,7 +468,7 @@ function SuplenteCard({
             onClick={() => setIsAddingBaixa(!isAddingBaixa)}
             variant={isAddingBaixa ? "secondary" : "default"}
           >
-            {isAddingBaixa ? <X size={12} className="text-foreground"/> : <Plus size={12} />} 
+            {isAddingBaixa ? <X size={12} className="text-foreground"/> : <Plus size={12} />}
             <span className={isAddingBaixa ? "text-foreground" : ""}>{isAddingBaixa ? "Cancelar" : "Pagar"}</span>
           </Button>
         </div>
@@ -496,6 +550,8 @@ export default function Pagamentos() {
   const [mes, setMes] = useState(now.getMonth() + 1);
   const [ano, setAno] = useState(now.getFullYear());
   const [busca, setBusca] = useState("");
+  const [bulkPaying, setBulkPaying] = useState(false);
+  const qc = useQueryClient();
 
   const { data: suplentes, isLoading: loadingSuplentes } = useQuery({
     queryKey: ["suplentes"],
@@ -541,13 +597,56 @@ export default function Pagamentos() {
   const totalPagoGeral = (pagamentos || []).reduce((a, p) => a + (p.valor || 0), 0);
   const pctGeral = totalCampanhaGeral > 0 ? Math.min(100, (totalPagoGeral / totalCampanhaGeral) * 100) : 0;
 
-  // Filtro de busca
+  // Filtro de busca com normalização de acentos (Tânia === tania)
+  const norm = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const suplantesFiltrados = (suplentes || []).filter(s => {
     if (!busca.trim()) return true;
-    return s.nome.toLowerCase().includes(busca.toLowerCase()) ||
-           (s.regiao_atuacao || "").toLowerCase().includes(busca.toLowerCase()) ||
-           (s.partido || "").toLowerCase().includes(busca.toLowerCase());
+    const q = norm(busca);
+    return norm(s.nome).includes(q) ||
+           norm(s.regiao_atuacao || "").includes(q) ||
+           norm(s.partido || "").includes(q);
   });
+
+  // Stats de retirada do mês
+  const suplanteComRetirada = suplantesFiltrados.filter(s => s.retirada_mensal_valor > 0);
+  const suplantesSemRetiradaPaga = suplanteComRetirada.filter(s =>
+    !(pagamentos || []).some(p =>
+      p.suplente_id === s.id && p.mes === mes && p.ano === ano && p.categoria === "retirada"
+    )
+  );
+  const todosRetiradaPagos = suplanteComRetirada.length > 0 && suplantesSemRetiradaPaga.length === 0;
+
+  const handlePagarRetiradaTodos = async () => {
+    if (suplantesSemRetiradaPaga.length === 0) return;
+    const totalLote = suplantesSemRetiradaPaga.reduce((a, s) => a + s.retirada_mensal_valor, 0);
+    const nomes = suplantesSemRetiradaPaga.map(s => `• ${s.nome} — ${fmt(s.retirada_mensal_valor)}`).join("\n");
+    if (!confirm(
+      `Registrar retirada de ${MESES[mes - 1]}/${ano} para ${suplantesSemRetiradaPaga.length} suplente(s)?\n\n${nomes}\n\nTotal: ${fmt(totalLote)}`
+    )) return;
+
+    setBulkPaying(true);
+    const inserts = suplantesSemRetiradaPaga.map(s => ({
+      suplente_id: s.id,
+      mes,
+      ano,
+      categoria: "retirada",
+      valor: s.retirada_mensal_valor,
+      observacao: `Pagamento em lote — ${MESES[mes - 1]}/${ano}`,
+    }));
+    const { error } = await supabase.from("pagamentos").insert(inserts);
+    setBulkPaying(false);
+
+    if (error) {
+      toast({ title: "Erro ao registrar pagamentos em lote", description: error.message, variant: "destructive" });
+    } else {
+      toast({
+        title: `✅ ${inserts.length} retirada(s) registrada(s)!`,
+        description: `Retiradas de ${MESES[mes - 1]}/${ano} marcadas como pagas. Total: ${fmt(totalLote)}`,
+      });
+      qc.invalidateQueries({ queryKey: ["pagamentos"] });
+      qc.invalidateQueries({ queryKey: ["suplentes"] });
+    }
+  };
 
   return (
     <PageTransition>
@@ -569,6 +668,42 @@ export default function Pagamentos() {
             </Button>
           </div>
         </div>
+
+        {/* Botão batch: Pagar Retirada de Todos */}
+        {!isLoading && suplanteComRetirada.length > 0 && (
+          <div className={`rounded-2xl border p-3 shadow-sm flex items-center justify-between gap-3 ${todosRetiradaPagos ? 'bg-green-500/10 border-green-500/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
+            <div className="min-w-0">
+              {todosRetiradaPagos ? (
+                <p className="text-sm font-bold text-green-600 dark:text-green-400 flex items-center gap-1.5">
+                  <CheckCircle2 size={14} /> Todas as retiradas de {MESES[mes - 1]} pagas!
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                    <AlertCircle size={14} /> {suplantesSemRetiradaPaga.length} retirada(s) pendente(s)
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {suplanteComRetirada.length - suplantesSemRetiradaPaga.length} de {suplanteComRetirada.length} pagas em {MESES[mes - 1]}/{ano}
+                  </p>
+                </>
+              )}
+            </div>
+            {!todosRetiradaPagos && (
+              <Button
+                size="sm"
+                onClick={handlePagarRetiradaTodos}
+                disabled={bulkPaying}
+                className="shrink-0 h-9 px-3 text-xs font-bold bg-gradient-to-r from-pink-500 to-rose-400 hover:opacity-90 text-white shadow-md"
+              >
+                {bulkPaying ? (
+                  <><Loader2 size={12} className="animate-spin mr-1" /> Registrando...</>
+                ) : (
+                  <><CheckCircle2 size={12} className="mr-1" /> Pagar Todos</>
+                )}
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* Resumo do mês e Geral */}
         <div className="bg-gradient-to-r from-pink-500 to-rose-400 rounded-2xl p-4 shadow-lg">

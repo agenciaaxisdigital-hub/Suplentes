@@ -137,11 +137,17 @@
     font-size: 16px !important;
   }
 
-  /* PWA standalone mode improvements */
+  /* PWA standalone mode — comportamento nativo */
   @media (display-mode: standalone) {
     body {
       overscroll-behavior-y: none;
+      /* Previne seleção acidental de texto (como app nativo) */
       -webkit-user-select: none;
+      user-select: none;
+    }
+    /* Permite seleção em campos de texto */
+    input, textarea, [contenteditable] {
+      -webkit-user-select: text;
       user-select: text;
     }
   }
