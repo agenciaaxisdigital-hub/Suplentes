@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+﻿import { useState, useCallback } from "react";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
@@ -17,7 +17,7 @@ import NotFound from "./pages/NotFound";
 import Usuarios from "./pages/Usuarios";
 import Pagamentos from "./pages/Pagamentos";
 
-// ─── QueryClient com suporte offline ─────────────────────────────────────────
+// â”€â”€â”€ QueryClient com suporte offline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -25,33 +25,33 @@ const queryClient = new QueryClient({
       networkMode: "offlineFirst",
       // Dados ficam "frescos" por 5 minutos; em background refetch sempre
       staleTime: 1000 * 60 * 5,
-      // Cache de 24h no memory — o localStorage persiste além disso
+      // Cache de 24h no memory â€” o localStorage persiste alÃ©m disso
       gcTime: 1000 * 60 * 60 * 24,
       retry: (failureCount, error: unknown) => {
-        // Não tenta novamente se for erro de autenticação; tenta 2x outros erros
+        // NÃ£o tenta novamente se for erro de autenticaÃ§Ã£o; tenta 2x outros erros
         const msg = (error as Error)?.message || "";
         if (msg.includes("JWT") || msg.includes("401")) return false;
         return failureCount < 2;
       },
     },
     mutations: {
-      // Mutations também funcionam offline (vão para a fila)
+      // Mutations tambÃ©m funcionam offline (vÃ£o para a fila)
       networkMode: "offlineFirst",
     },
   },
 });
 
-// ─── Persiste o cache do React Query no localStorage ─────────────────────────
-// Isso permite que o app funcione sem internet: na próxima abertura,
-// os dados do último fetch ficam disponíveis instantaneamente.
+// â”€â”€â”€ Persiste o cache do React Query no localStorage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Isso permite que o app funcione sem internet: na prÃ³xima abertura,
+// os dados do Ãºltimo fetch ficam disponÃ­veis instantaneamente.
 const persister = createSyncStoragePersister({
   storage: window.localStorage,
   key: "rq_cache_v1",
-  // Comprime para não usar muito espaço (limita a 4MB)
+  // Comprime para nÃ£o usar muito espaÃ§o (limita a 4MB)
   throttleTime: 1000,
 });
 
-// ─── Rotas protegidas ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Rotas protegidas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -77,7 +77,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// ─── App ──────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ App â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 import VersionMonitor from "./components/VersionMonitor";
 import InstallPWA from "./components/InstallPWA";
@@ -112,7 +112,7 @@ const App = () => {
       <TooltipProvider>
         <GlobalOfflineSync />
         <InstallPWA />
-        <VersionMonitor />
+      <VersionMonitor />
         <Toaster />
         <Sonner />
         {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
@@ -133,3 +133,4 @@ const App = () => {
 };
 
 export default App;
+
