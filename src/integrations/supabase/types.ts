@@ -24,6 +24,7 @@ export type Database = {
           rede_social: string | null
           ligacao_politica: string | null
           retirada_mensal_valor: number | null
+          retirada_mensal_meses: number | null
           chave_pix: string | null
           created_at: string
           updated_at: string
@@ -37,6 +38,7 @@ export type Database = {
           rede_social?: string | null
           ligacao_politica?: string | null
           retirada_mensal_valor?: number | null
+          retirada_mensal_meses?: number | null
           chave_pix?: string | null
           created_at?: string
           updated_at?: string
@@ -50,6 +52,7 @@ export type Database = {
           rede_social?: string | null
           ligacao_politica?: string | null
           retirada_mensal_valor?: number | null
+          retirada_mensal_meses?: number | null
           chave_pix?: string | null
           created_at?: string
           updated_at?: string
@@ -63,6 +66,7 @@ export type Database = {
           cpf: string | null
           whatsapp: string | null
           valor_contrato: number | null
+          valor_contrato_meses: number | null
           created_at: string
           updated_at: string
         }
@@ -72,6 +76,7 @@ export type Database = {
           cpf?: string | null
           whatsapp?: string | null
           valor_contrato?: number | null
+          valor_contrato_meses?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -81,6 +86,7 @@ export type Database = {
           cpf?: string | null
           whatsapp?: string | null
           valor_contrato?: number | null
+          valor_contrato_meses?: number | null
           created_at?: string
           updated_at?: string
         }

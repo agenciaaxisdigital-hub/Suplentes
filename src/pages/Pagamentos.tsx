@@ -33,8 +33,8 @@ type Suplente = {
   liderancas_qtd: number; liderancas_valor_unit: number;
   fiscais_qtd: number; fiscais_valor_unit: number;
 };
-type Lideranca = { id: string; nome: string; regiao: string | null; retirada_mensal_valor: number | null; chave_pix: string | null; };
-type AdminPessoa = { id: string; nome: string; whatsapp: string | null; valor_contrato: number | null; };
+type Lideranca = { id: string; nome: string; regiao: string | null; retirada_mensal_valor: number | null; retirada_mensal_meses: number | null; chave_pix: string | null; };
+type AdminPessoa = { id: string; nome: string; whatsapp: string | null; valor_contrato: number | null; valor_contrato_meses: number | null; };
 
 // ── Barra de progresso ─────────────────────────────────────────────────────────
 function Bar({ pago, total, cor = "bg-primary" }: { pago: number; total: number; cor?: string }) {
@@ -192,7 +192,8 @@ function SuplenteCard({ suplente, pagamentosMes, todosPagamentos, mes, ano }: {
       tipo_pessoa: "suplente", suplente_id: suplente.id,
       mes, ano, categoria: cat, valor, observacao: obs || null,
       lideranca_id: null, admin_id: null,
-    } as Parameters<typeof supabase.from<"pagamentos">>[0] extends never ? never : never | any); // eslint-disable-line
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
     setSaving(false);
     if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
     else {
@@ -353,10 +354,11 @@ function SuplenteCard({ suplente, pagamentosMes, todosPagamentos, mes, ano }: {
 }
 
 // ── Card Liderança / Admin ─────────────────────────────────────────────────────
-function PessoaCard({ tipo, id, nome, subtitulo, valorEsperado, totalPagoMes, pagamentosMes, mes, ano }: {
+function PessoaCard({ tipo, id, nome, subtitulo, valorEsperado, mesesCampanha, totalPagoMes, pagamentosMes, todosPagamentos, mes, ano }: {
   tipo: "lideranca" | "admin"; id: string; nome: string; subtitulo?: string;
-  valorEsperado: number; totalPagoMes: number; pagamentosMes: Pagamento[];
-  mes: number; ano: number;
+  valorEsperado: number; mesesCampanha: number;
+  totalPagoMes: number; pagamentosMes: Pagamento[];
+  todosPagamentos: Pagamento[]; mes: number; ano: number;
 }) {
   const qc = useQueryClient();
   const [paying, setPaying] = useState(false);
@@ -368,6 +370,11 @@ function PessoaCard({ tipo, id, nome, subtitulo, valorEsperado, totalPagoMes, pa
   const categoria = tipo === "lideranca" ? "retirada" : "salario";
   const tipoColor = tipo === "lideranca" ? "text-violet-500 bg-violet-500/10" : "text-blue-500 bg-blue-500/10";
   const tipoLabel = tipo === "lideranca" ? "Liderança" : "Admin";
+  const totalCampanha = valorEsperado * mesesCampanha;
+  const totalPagoAll = (todosPagamentos || []).filter(p =>
+    tipo === "lideranca" ? p.lideranca_id === id : p.admin_id === id
+  ).reduce((a, p) => a + p.valor, 0);
+  const pctCampanha = totalCampanha > 0 ? Math.min(100, (totalPagoAll / totalCampanha) * 100) : 0;
 
   const handleSave = async (valor: number, obs: string) => {
     setSaving(true);
@@ -404,13 +411,25 @@ function PessoaCard({ tipo, id, nome, subtitulo, valorEsperado, totalPagoMes, pa
             </div>
             <p className="font-bold text-foreground text-sm truncate">{nome}</p>
             {subtitulo && <p className="text-[11px] text-muted-foreground truncate">{subtitulo}</p>}
+            {/* Barra do mês atual */}
             {(temAdiantamento || !pago) && (
-              <div className="mt-1.5">
+              <div className="mt-1">
                 <p className="text-[10px] text-muted-foreground mb-0.5">
                   {MESES[mes - 1]} — {fmt(totalPagoMes)} / {fmt(valorEsperado)}
                 </p>
                 <Bar pago={totalPagoMes} total={valorEsperado}
                   cor={pago ? "bg-green-500" : temAdiantamento ? "bg-amber-500" : "bg-muted-foreground/30"} />
+              </div>
+            )}
+            {/* Barra de campanha total */}
+            {totalCampanha > 0 && (
+              <div className="mt-1.5">
+                <div className="flex justify-between text-[9px] text-muted-foreground mb-0.5">
+                  <span>Campanha total ({mesesCampanha} meses)</span>
+                  <span>{fmt(totalPagoAll)} / {fmt(totalCampanha)}</span>
+                </div>
+                <Bar pago={totalPagoAll} total={totalCampanha}
+                  cor={pctCampanha >= 100 ? "bg-green-500" : "bg-primary/60"} />
               </div>
             )}
           </div>
@@ -489,7 +508,7 @@ export default function Pagamentos() {
   const { data: liderancas, isLoading: loadL } = useQuery({
     queryKey: ["liderancas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("liderancas").select("id,nome,regiao,retirada_mensal_valor,chave_pix").order("nome");
+      const { data, error } = await supabase.from("liderancas").select("id,nome,regiao,retirada_mensal_valor,retirada_mensal_meses,chave_pix").order("nome");
       if (error) throw error;
       return data as unknown as Lideranca[];
     },
@@ -499,7 +518,7 @@ export default function Pagamentos() {
   const { data: administrativo, isLoading: loadA } = useQuery({
     queryKey: ["administrativo"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("administrativo").select("id,nome,whatsapp,valor_contrato").order("nome");
+      const { data, error } = await supabase.from("administrativo").select("id,nome,whatsapp,valor_contrato,valor_contrato_meses").order("nome");
       if (error) throw error;
       return data as unknown as AdminPessoa[];
     },
@@ -716,15 +735,17 @@ export default function Pagamentos() {
                   const pagsL = pagsMes.filter(p => p.lideranca_id === l.id);
                   return <PessoaCard key={l.id} tipo="lideranca" id={l.id} nome={l.nome}
                     subtitulo={[l.regiao, l.chave_pix ? `PIX: ${l.chave_pix}` : undefined].filter(Boolean).join(" · ")}
-                    valorEsperado={l.retirada_mensal_valor || 0} totalPagoMes={pagsL.reduce((a, p) => a + p.valor, 0)}
-                    pagamentosMes={pagsL} mes={mes} ano={ano} />;
+                    valorEsperado={l.retirada_mensal_valor || 0} mesesCampanha={l.retirada_mensal_meses || 10}
+                    totalPagoMes={pagsL.reduce((a, p) => a + p.valor, 0)}
+                    pagamentosMes={pagsL} todosPagamentos={pagamentos || []} mes={mes} ano={ano} />;
                 })}
                 {aba === "admin" && admPendentes.map(a => {
                   const pagsA = pagsMes.filter(p => p.admin_id === a.id);
                   return <PessoaCard key={a.id} tipo="admin" id={a.id} nome={a.nome}
                     subtitulo={a.whatsapp || undefined}
-                    valorEsperado={a.valor_contrato || 0} totalPagoMes={pagsA.reduce((b, p) => b + p.valor, 0)}
-                    pagamentosMes={pagsA} mes={mes} ano={ano} />;
+                    valorEsperado={a.valor_contrato || 0} mesesCampanha={a.valor_contrato_meses || 10}
+                    totalPagoMes={pagsA.reduce((b, p) => b + p.valor, 0)}
+                    pagamentosMes={pagsA} todosPagamentos={pagamentos || []} mes={mes} ano={ano} />;
                 })}
               </div>
             )}
@@ -758,15 +779,17 @@ export default function Pagamentos() {
                   const pagsL = pagsMes.filter(p => p.lideranca_id === l.id);
                   return <PessoaCard key={l.id} tipo="lideranca" id={l.id} nome={l.nome}
                     subtitulo={[l.regiao, l.chave_pix ? `PIX: ${l.chave_pix}` : undefined].filter(Boolean).join(" · ")}
-                    valorEsperado={l.retirada_mensal_valor || 0} totalPagoMes={pagsL.reduce((a, p) => a + p.valor, 0)}
-                    pagamentosMes={pagsL} mes={mes} ano={ano} />;
+                    valorEsperado={l.retirada_mensal_valor || 0} mesesCampanha={l.retirada_mensal_meses || 10}
+                    totalPagoMes={pagsL.reduce((a, p) => a + p.valor, 0)}
+                    pagamentosMes={pagsL} todosPagamentos={pagamentos || []} mes={mes} ano={ano} />;
                 })}
                 {showPagos && aba === "admin" && admPagos.map(a => {
                   const pagsA = pagsMes.filter(p => p.admin_id === a.id);
                   return <PessoaCard key={a.id} tipo="admin" id={a.id} nome={a.nome}
                     subtitulo={a.whatsapp || undefined}
-                    valorEsperado={a.valor_contrato || 0} totalPagoMes={pagsA.reduce((b, p) => b + p.valor, 0)}
-                    pagamentosMes={pagsA} mes={mes} ano={ano} />;
+                    valorEsperado={a.valor_contrato || 0} mesesCampanha={a.valor_contrato_meses || 10}
+                    totalPagoMes={pagsA.reduce((b, p) => b + p.valor, 0)}
+                    pagamentosMes={pagsA} todosPagamentos={pagamentos || []} mes={mes} ano={ano} />;
                 })}
               </div>
             )}

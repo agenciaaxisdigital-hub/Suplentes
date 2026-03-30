@@ -9,6 +9,10 @@ import { toast } from "@/hooks/use-toast";
 import { Save, Loader2, ArrowLeft } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 
+const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
 interface FormData {
   nome: string;
   cpf: string;
@@ -17,21 +21,17 @@ interface FormData {
   rede_social: string;
   ligacao_politica: string;
   retirada_mensal_valor: number;
+  retirada_mensal_meses: number;
   chave_pix: string;
 }
 
 const defaultForm: FormData = {
-  nome: "",
-  cpf: "",
-  regiao: "",
-  whatsapp: "",
-  rede_social: "",
-  ligacao_politica: "",
+  nome: "", cpf: "", regiao: "", whatsapp: "",
+  rede_social: "", ligacao_politica: "",
   retirada_mensal_valor: 0,
+  retirada_mensal_meses: 10,
   chave_pix: "",
 };
-
-const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export default function CadastroLideranca() {
   const { id } = useParams<{ id: string }>();
@@ -61,13 +61,14 @@ export default function CadastroLideranca() {
       rede_social: existing.rede_social || "",
       ligacao_politica: existing.ligacao_politica || "",
       retirada_mensal_valor: existing.retirada_mensal_valor || 0,
+      retirada_mensal_meses: (existing as any).retirada_mensal_meses || 10,
       chave_pix: existing.chave_pix || "",
     });
     setInitialized(true);
   }
 
   const set = (key: keyof FormData, value: string | number) =>
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm(prev => ({ ...prev, [key]: value }));
 
   const handleSave = async () => {
     if (!form.nome.trim()) {
@@ -76,11 +77,11 @@ export default function CadastroLideranca() {
     }
     setSaving(true);
     const payload = { ...form, updated_at: new Date().toISOString() };
-    let error;
+    let error: { message: string } | null = null;
     if (id) {
-      ({ error } = await supabase.from("liderancas").update(payload).eq("id", id));
+      ({ error } = await supabase.from("liderancas").update(payload as any).eq("id", id));
     } else {
-      ({ error } = await supabase.from("liderancas").insert(payload));
+      ({ error } = await supabase.from("liderancas").insert(payload as any));
     }
     setSaving(false);
     if (error) {
@@ -92,7 +93,13 @@ export default function CadastroLideranca() {
     }
   };
 
-  if (isLoading) return <div className="flex items-center justify-center h-40"><Loader2 className="animate-spin text-primary" /></div>;
+  if (isLoading) return (
+    <div className="flex items-center justify-center h-40">
+      <Loader2 className="animate-spin text-primary" />
+    </div>
+  );
+
+  const totalCampanha = form.retirada_mensal_valor * form.retirada_mensal_meses;
 
   return (
     <PageTransition>
@@ -109,53 +116,79 @@ export default function CadastroLideranca() {
           <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Dados da Liderança</h2>
 
           <Field label="Nome" required>
-            <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Nome completo" className="bg-card shadow-sm border-border" />
+            <Input value={form.nome} onChange={e => set("nome", e.target.value)}
+              placeholder="Nome completo" className="bg-card shadow-sm border-border" />
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="CPF">
-              <Input value={form.cpf} onChange={(e) => set("cpf", e.target.value)} placeholder="000.000.000-00" inputMode="numeric" className="bg-card shadow-sm border-border" />
+              <Input value={form.cpf} onChange={e => set("cpf", e.target.value)}
+                placeholder="000.000.000-00" inputMode="numeric" className="bg-card shadow-sm border-border" />
             </Field>
-            <Field label="Região">
-              <Input value={form.regiao} onChange={(e) => set("regiao", e.target.value)} placeholder="Ex: Sul" className="bg-card shadow-sm border-border" />
+            <Field label="Setor / Região">
+              <Input value={form.regiao} onChange={e => set("regiao", e.target.value)}
+                placeholder="Ex: Sul" className="bg-card shadow-sm border-border" />
             </Field>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="WhatsApp">
-              <Input value={form.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} placeholder="(62) 99999-9999" inputMode="tel" className="bg-card shadow-sm border-border" />
+              <Input value={form.whatsapp} onChange={e => set("whatsapp", e.target.value)}
+                placeholder="(62) 99999-9999" inputMode="tel" className="bg-card shadow-sm border-border" />
             </Field>
             <Field label="Rede Social">
-              <Input value={form.rede_social} onChange={(e) => set("rede_social", e.target.value)} placeholder="@usuario" className="bg-card shadow-sm border-border" />
+              <Input value={form.rede_social} onChange={e => set("rede_social", e.target.value)}
+                placeholder="@usuario" className="bg-card shadow-sm border-border" />
             </Field>
           </div>
 
           <Field label="Ligação Política / Cargo">
-            <Input value={form.ligacao_politica} onChange={(e) => set("ligacao_politica", e.target.value)} placeholder="Ex: Presidente de Bairro, Cabo Eleitoral..." className="bg-card shadow-sm border-border" />
+            <Input value={form.ligacao_politica} onChange={e => set("ligacao_politica", e.target.value)}
+              placeholder="Ex: Presidente de Bairro, Cabo Eleitoral..." className="bg-card shadow-sm border-border" />
           </Field>
         </section>
 
-        {/* Financeiro */}
+        {/* Retirada */}
         <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
           <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Retirada Mensal</h2>
 
-          <Field label="Valor Mensal (R$)">
-            <Input
-              type="number" inputMode="numeric"
-              value={form.retirada_mensal_valor || ""}
-              onChange={(e) => set("retirada_mensal_valor", parseFloat(e.target.value) || 0)}
-              placeholder="0"
-              className="bg-card shadow-sm border-border"
-            />
-          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Valor Mensal (R$)">
+              <Input
+                type="number" inputMode="numeric"
+                value={form.retirada_mensal_valor || ""}
+                onChange={e => set("retirada_mensal_valor", parseFloat(e.target.value) || 0)}
+                placeholder="0"
+                className="bg-card shadow-sm border-border"
+              />
+            </Field>
+            <Field label="Retirada Até (Mês)">
+              <select
+                value={form.retirada_mensal_meses}
+                onChange={e => set("retirada_mensal_meses", parseInt(e.target.value))}
+                className="w-full h-10 rounded-md border border-border bg-card px-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                {MESES.map((m, i) => (
+                  <option key={i} value={i + 1}>{m}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
 
-          <div className="flex items-center justify-between bg-primary/5 rounded-xl p-3">
-            <span className="text-sm font-semibold text-foreground">Retirada Mensal</span>
-            <span className="text-base font-bold text-primary">{fmt(form.retirada_mensal_valor)}</span>
+          <div className="bg-primary/5 rounded-xl p-3 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-foreground">Retirada Mensal</span>
+              <span className="text-base font-bold text-primary">{fmt(form.retirada_mensal_valor)}/mês</span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Até {MESES[form.retirada_mensal_meses - 1]} ({form.retirada_mensal_meses} meses)</span>
+              <span className="font-semibold text-foreground">Total: {fmt(totalCampanha)}</span>
+            </div>
           </div>
 
           <Field label="Chave PIX">
-            <Input value={form.chave_pix} onChange={(e) => set("chave_pix", e.target.value)} placeholder="CPF, e-mail, telefone ou chave aleatória" className="bg-card shadow-sm border-border" />
+            <Input value={form.chave_pix} onChange={e => set("chave_pix", e.target.value)}
+              placeholder="CPF, e-mail, telefone ou chave aleatória" className="bg-card shadow-sm border-border" />
           </Field>
         </section>
 
