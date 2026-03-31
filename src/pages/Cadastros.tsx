@@ -47,7 +47,6 @@ export default function Cadastros() {
 
 
   const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  const fmtN = (v: number) => (v || 0).toLocaleString("pt-BR");
 
   const editing = editingId ? suplentes?.find((s: any) => s.id === editingId) : null;
 
@@ -131,7 +130,7 @@ export default function Cadastros() {
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/novo")}
               className="text-xs gap-1.5 active:scale-95 transition-transform bg-gradient-to-r from-pink-500 to-rose-400 text-white"
             >
               <UserPlus size={14} />

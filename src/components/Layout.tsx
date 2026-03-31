@@ -101,59 +101,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       <BottomNav />
 
-      {/* Floating install card — acima da BottomNav, não bloqueia conteúdo */}
+      {/* Botão instalar PWA — pequeno, sem banner */}
       {canInstall && !dismissedInstall && (
-        <div
-          className="fixed bottom-[72px] left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm"
-          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        <button
+          onClick={install}
+          className="fixed bottom-[80px] right-4 z-50 w-10 h-10 rounded-full bg-primary shadow-lg flex items-center justify-center active:opacity-70"
+          title="Instalar app"
         >
-          <div className="bg-card border border-border rounded-2xl shadow-lg px-4 py-3 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <Download size={15} className="text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-foreground leading-tight">Instalar app</p>
-              <p className="text-[10px] text-muted-foreground leading-tight">Acesso rápido, funciona offline</p>
-            </div>
-            <button
-              onClick={install}
-              className="text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-xl active:opacity-70 shrink-0"
-            >
-              Instalar
-            </button>
-            <button
-              onClick={handleDismissInstall}
-              className="text-muted-foreground p-1 rounded-lg active:bg-muted shrink-0"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Floating iOS install hint */}
-      {showIOSInstall && (
-        <div
-          className="fixed bottom-[72px] left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm"
-          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-        >
-          <div className="bg-card border border-border rounded-2xl shadow-lg px-4 py-3 flex items-start gap-3">
-            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-              <Download size={15} className="text-primary" />
-            </div>
-            <p className="text-xs text-foreground flex-1 leading-snug">
-              <span className="font-semibold">Adicione à tela inicial:</span> toque em{" "}
-              <span className="font-mono bg-muted px-1 rounded text-[11px]">⎙</span>{" "}
-              depois em <strong>Adicionar à Tela de Início</strong>
-            </p>
-            <button
-              onClick={handleDismissIOS}
-              className="text-muted-foreground p-1 rounded-lg active:bg-muted shrink-0"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        </div>
+          <Download size={18} className="text-white" />
+        </button>
       )}
     </div>
   );
