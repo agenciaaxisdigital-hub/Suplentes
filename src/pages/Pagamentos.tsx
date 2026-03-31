@@ -154,9 +154,39 @@ function SuplenteCard({ suplente, pagamentosMes, todosPagamentos, mes, ano }: {
   const [saving, setSaving] = useState(false);
   const [showHistCat, setShowHistCat] = useState<Record<string, boolean>>({});
   const toggleHistCat = (key: string) => setShowHistCat(prev => ({ ...prev, [key]: !prev[key] }));
+  const [editingCat, setEditingCat] = useState<string | null>(null);
+  const [editQtd, setEditQtd] = useState("");
+  const [editVal, setEditVal] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const pagsSupMes = pagamentosMes.filter(p => p.suplente_id === suplente.id);
   const pagsSupAll = todosPagamentos.filter(p => p.suplente_id === suplente.id);
+
+  // Campos do banco para cada categoria
+  const catFields: Record<string, { qtdKey: string; valKey: string }> = {
+    plotagem: { qtdKey: "plotagem_qtd", valKey: "plotagem_valor_unit" },
+    liderancas: { qtdKey: "liderancas_qtd", valKey: "liderancas_valor_unit" },
+    fiscais: { qtdKey: "fiscais_qtd", valKey: "fiscais_valor_unit" },
+  };
+
+  const handleSaveEdit = async (catKey: string) => {
+    const fields = catFields[catKey];
+    if (!fields) return;
+    const qtd = parseInt(editQtd) || 0;
+    const val = parseFloat(editVal.replace(",", ".")) || 0;
+    setSavingEdit(true);
+    const { error } = await supabase.from("suplentes").update({
+      [fields.qtdKey]: qtd,
+      [fields.valKey]: val,
+    } as any).eq("id", suplente.id);
+    setSavingEdit(false);
+    if (error) toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+    else {
+      toast({ title: "Atualizado!" });
+      qc.invalidateQueries({ queryKey: ["suplentes"] });
+      setEditingCat(null);
+    }
+  };
 
   const categorias = [
     {
@@ -165,29 +195,37 @@ function SuplenteCard({ suplente, pagamentosMes, todosPagamentos, mes, ano }: {
       pago: pagsSupMes.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0),
       badge: "mês",
       detalhe: suplente.retirada_mensal_meses ? `${suplente.retirada_mensal_meses}m × ${fmt(suplente.retirada_mensal_valor || 0)}` : null,
+      editavel: false,
+      qtd: null, valUnit: null,
     },
     {
       key: "plotagem", label: "Plotagem",
       planejado: (suplente.plotagem_qtd || 0) * (suplente.plotagem_valor_unit || 0),
       pago: pagsSupAll.filter(p => p.categoria === "plotagem").reduce((a, p) => a + p.valor, 0),
       badge: "campanha",
-      detalhe: suplente.plotagem_qtd ? `${suplente.plotagem_qtd} × ${fmt(suplente.plotagem_valor_unit || 0)}` : null,
+      detalhe: `${suplente.plotagem_qtd || 0} × ${fmt(suplente.plotagem_valor_unit || 0)}`,
+      editavel: true,
+      qtd: suplente.plotagem_qtd, valUnit: suplente.plotagem_valor_unit,
     },
     {
       key: "liderancas", label: "Lideranças",
       planejado: (suplente.liderancas_qtd || 0) * (suplente.liderancas_valor_unit || 0),
       pago: pagsSupAll.filter(p => p.categoria === "liderancas").reduce((a, p) => a + p.valor, 0),
       badge: "campanha",
-      detalhe: suplente.liderancas_qtd ? `${suplente.liderancas_qtd} × ${fmt(suplente.liderancas_valor_unit || 0)}` : null,
+      detalhe: `${suplente.liderancas_qtd || 0} × ${fmt(suplente.liderancas_valor_unit || 0)}`,
+      editavel: true,
+      qtd: suplente.liderancas_qtd, valUnit: suplente.liderancas_valor_unit,
     },
     {
       key: "fiscais", label: "Fiscais",
       planejado: (suplente.fiscais_qtd || 0) * (suplente.fiscais_valor_unit || 0),
       pago: pagsSupAll.filter(p => p.categoria === "fiscais").reduce((a, p) => a + p.valor, 0),
       badge: "campanha",
-      detalhe: suplente.fiscais_qtd ? `${suplente.fiscais_qtd} × ${fmt(suplente.fiscais_valor_unit || 0)}` : null,
+      detalhe: `${suplente.fiscais_qtd || 0} × ${fmt(suplente.fiscais_valor_unit || 0)}`,
+      editavel: true,
+      qtd: suplente.fiscais_qtd, valUnit: suplente.fiscais_valor_unit,
     },
-  ].filter(c => c.planejado > 0);
+  ].filter(c => c.planejado > 0 || c.editavel);
 
   const totalCampanha = categorias.reduce((a, c) => a + c.planejado, 0);
   const totalPagoAll = pagsSupAll.reduce((a, p) => a + p.valor, 0);
@@ -274,8 +312,14 @@ function SuplenteCard({ suplente, pagamentosMes, todosPagamentos, mes, ano }: {
                       </span>
                       {quitado && <CheckCircle2 size={11} className="text-green-500" />}
                     </div>
-                    {cat.detalhe && (
-                      <p className="text-[10px] text-muted-foreground leading-tight">{cat.detalhe}</p>
+                    {cat.detalhe && editingCat !== cat.key && (
+                      <div className="flex items-center gap-1">
+                        <p className="text-[10px] text-muted-foreground leading-tight">{cat.detalhe}</p>
+                        {cat.editavel && (
+                          <button onClick={() => { setEditingCat(cat.key); setEditQtd(String(cat.qtd || 0)); setEditVal(String(cat.valUnit || 0)); }}
+                            className="text-muted-foreground hover:text-primary"><Pencil size={10} /></button>
+                        )}
+                      </div>
                     )}
                   </div>
                   <div className="text-right shrink-0">
@@ -323,6 +367,39 @@ function SuplenteCard({ suplente, pagamentosMes, todosPagamentos, mes, ano }: {
                   onCancel={() => setPayingCat(null)}
                   saving={saving}
                 />
+              )}
+              {editingCat === cat.key && cat.editavel && (
+                <div className="border-t border-border/60 bg-muted/30 px-3 py-2.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-foreground">Editar {cat.label}</span>
+                    <button onClick={() => setEditingCat(null)} className="text-muted-foreground"><X size={14} /></button>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Quantidade</p>
+                      <Input type="number" inputMode="numeric" value={editQtd}
+                        onChange={e => setEditQtd(e.target.value)}
+                        className="h-9 text-sm bg-card border-primary/40" placeholder="0" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Valor unit. (R$)</p>
+                      <Input type="number" inputMode="decimal" value={editVal}
+                        onChange={e => setEditVal(e.target.value)}
+                        className="h-9 text-sm bg-card border-primary/40" placeholder="0,00" />
+                    </div>
+                    <div className="flex flex-col justify-end">
+                      <Button onClick={() => handleSaveEdit(cat.key)} disabled={savingEdit}
+                        className="h-9 px-3 bg-gradient-to-r from-pink-500 to-rose-400 text-white">
+                        {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                      </Button>
+                    </div>
+                  </div>
+                  {(parseInt(editQtd) > 0 && parseFloat(editVal.replace(",",".")) > 0) && (
+                    <p className="text-[10px] text-primary font-medium">
+                      Total: {fmt(parseInt(editQtd) * parseFloat(editVal.replace(",",".")))}
+                    </p>
+                  )}
+                </div>
               )}
               {histOpen && catPags.length > 0 && (
                 <div className="bg-muted/10 border-t border-border/30">
