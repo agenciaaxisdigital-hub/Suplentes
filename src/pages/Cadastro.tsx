@@ -92,10 +92,6 @@ export default function Cadastro({ initial, onSaved }: Props) {
       toast({ title: "Partido obrigatório", description: "Informe o partido antes de salvar.", variant: "destructive" });
       return;
     }
-    if (!Number.isFinite(form.total_votos) || form.total_votos <= 0) {
-      toast({ title: "Votos obrigatórios", description: "Informe o total de votos maior que zero.", variant: "destructive" });
-      return;
-    }
     setSaving(true);
 
     // Verificar duplicata por nome — tanto em INSERT quanto em UPDATE
