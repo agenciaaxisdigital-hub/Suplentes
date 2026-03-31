@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown, Loader2 } from "lucide-react";
+import { Search, ChevronRight, ArrowLeft, Trash2, FileDown, Loader2, BarChart2, MapPin } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Cadastro from "./Cadastro";
 import { exportFichasLotePDF, exportSuplentePDF } from "@/lib/exports";
@@ -37,11 +37,24 @@ export default function Cadastros() {
     if (!search.trim()) return true;
     const term = normalizeStr(search);
     const nome = normalizeStr(s.nome || "");
-    const bairro = normalizeStr(s.bairro || "");
     const regiao = normalizeStr(s.regiao_atuacao || "");
     const urna = (s.numero_urna || "").toLowerCase();
-    return nome.includes(term) || bairro.includes(term) || regiao.includes(term) || urna.includes(term);
+    return nome.includes(term) || regiao.includes(term) || urna.includes(term);
   }) ?? [];
+
+  // Totais gerais
+  const totalVotos = (suplentes || []).reduce((a: number, s: any) => a + (s.total_votos || 0), 0);
+  const totalExpectativa = (suplentes || []).reduce((a: number, s: any) => a + (s.expectativa_votos || 0), 0);
+
+  // Agrupamento por região
+  const regioes: Record<string, { votos: number; count: number }> = {};
+  for (const s of (suplentes || [])) {
+    const reg = (s.regiao_atuacao || "Sem região").trim();
+    if (!regioes[reg]) regioes[reg] = { votos: 0, count: 0 };
+    regioes[reg].votos += s.total_votos || 0;
+    regioes[reg].count += 1;
+  }
+  const regioesList = Object.entries(regioes).sort((a, b) => b[1].votos - a[1].votos);
 
   const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -138,10 +151,48 @@ export default function Cadastros() {
           </div>
         </div>
 
+        {/* Painel de votos e regiões */}
+        {!isLoading && (suplentes || []).length > 0 && (
+          <div className="bg-gradient-to-r from-pink-500 to-rose-400 rounded-2xl p-3 shadow-sm space-y-2">
+            <div className="flex items-center gap-1.5 mb-1">
+              <BarChart2 size={13} className="text-white/80" />
+              <p className="text-white/80 text-xs font-medium">Resumo de Votos — {(suplentes || []).length} suplentes</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-white/15 rounded-xl p-2 text-center">
+                <p className="text-white/70 text-[9px] uppercase tracking-wider">Total Votos</p>
+                <p className="text-white font-bold text-base leading-tight">{totalVotos.toLocaleString("pt-BR")}</p>
+              </div>
+              <div className="bg-white/15 rounded-xl p-2 text-center">
+                <p className="text-white/70 text-[9px] uppercase tracking-wider">Expectativa</p>
+                <p className="text-white font-bold text-base leading-tight">{totalExpectativa.toLocaleString("pt-BR")}</p>
+              </div>
+            </div>
+            {regioesList.length > 0 && (
+              <div className="space-y-1 pt-1">
+                <p className="text-white/70 text-[9px] uppercase tracking-wider flex items-center gap-1"><MapPin size={9} /> Por Região</p>
+                {regioesList.map(([reg, info]) => {
+                  const pct = totalVotos > 0 ? (info.votos / totalVotos) * 100 : 0;
+                  return (
+                    <div key={reg} className="flex items-center gap-2">
+                      <span className="text-white/90 text-[10px] w-24 truncate shrink-0">{reg}</span>
+                      <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                        <div className="h-full bg-white rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-white/80 text-[10px] shrink-0 w-12 text-right">{info.votos.toLocaleString("pt-BR")}</span>
+                      <span className="text-white/50 text-[9px] shrink-0">({info.count})</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="relative">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome, bairro, região ou nº urna..."
+            placeholder="Buscar por nome, região ou nº urna..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10 bg-card border-border"
@@ -182,14 +233,12 @@ export default function Cadastros() {
                         <div className="min-w-0 flex-1">
                           <p className="font-bold text-foreground text-sm truncate">{s.nome}</p>
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                            {s.bairro && (
+                            {s.regiao_atuacao && (
                               <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                                <MapPin size={10} className="text-primary shrink-0" /> {s.bairro}
+                                <MapPin size={10} className="text-primary shrink-0" /> {s.regiao_atuacao}
                               </span>
                             )}
-                            {s.partido && <span className="text-[11px] text-muted-foreground">{s.partido}</span>}
                             {s.numero_urna && <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">#{s.numero_urna}</span>}
-                            {s.situacao && <span className="text-[10px] font-medium uppercase tracking-wider text-primary">{s.situacao}</span>}
                           </div>
                         </div>
                         <p className="text-sm font-bold text-primary whitespace-nowrap">{fmt(calcTotaisFinanceiros(s).totalFinal)}</p>
