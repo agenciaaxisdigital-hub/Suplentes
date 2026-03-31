@@ -101,15 +101,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       <BottomNav />
 
-      {/* Botão instalar PWA — pequeno, sem banner */}
+      {/* Botão instalar PWA — centralizado acima da BottomNav, sem banner */}
       {canInstall && !dismissedInstall && (
-        <button
-          onClick={install}
-          className="fixed bottom-[80px] right-4 z-50 w-10 h-10 rounded-full bg-primary shadow-lg flex items-center justify-center active:opacity-70"
-          title="Instalar app"
-        >
-          <Download size={18} className="text-white" />
-        </button>
+        <div className="fixed bottom-[72px] left-1/2 -translate-x-1/2 z-50">
+          <button
+            onClick={install}
+            className="flex items-center gap-2 bg-primary text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg active:opacity-70"
+          >
+            <Download size={14} />
+            Instalar app
+          </button>
+        </div>
       )}
     </div>
   );
