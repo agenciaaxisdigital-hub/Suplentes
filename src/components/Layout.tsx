@@ -1,44 +1,20 @@
 import { BottomNav } from "./BottomNav";
 import { useLocation } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
-import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { useEffect, useRef } from "react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
-import { Download, WifiOff, X, RefreshCw } from "lucide-react";
+import { WifiOff, RefreshCw } from "lucide-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   const mainRef = useRef<HTMLDivElement>(null);
-  const { canInstall, install } = usePWAInstall();
   const isOnline = useOnlineStatus();
   const { syncing, pendingCount, syncQueue } = useOfflineSync();
-  const [dismissedInstall, setDismissedInstall] = useState(() =>
-    sessionStorage.getItem("pwa_install_dismissed") === "1"
-  );
-
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
-  const [dismissedIOS, setDismissedIOS] = useState(() =>
-    !!sessionStorage.getItem("pwa_ios_dismissed")
-  );
-  const showIOSInstall = isIOS && !isStandalone && !dismissedIOS;
 
   // Scroll para o topo ao trocar de rota
   useEffect(() => {
     mainRef.current?.scrollTo(0, 0);
   }, [pathname]);
-
-  const handleDismissInstall = () => {
-    sessionStorage.setItem("pwa_install_dismissed", "1");
-    setDismissedInstall(true);
-  };
-
-  const handleDismissIOS = () => {
-    sessionStorage.setItem("pwa_ios_dismissed", "1");
-    setDismissedIOS(true);
-  };
-
-  const showInstallBanner = (canInstall && !dismissedInstall) || showIOSInstall;
 
   return (
     <div className="h-[100dvh] flex flex-col bg-muted select-none">
@@ -88,9 +64,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         className="flex-1 overflow-y-auto overscroll-y-contain min-h-0"
         style={{
           WebkitOverflowScrolling: "touch",
-          paddingBottom: showInstallBanner
-            ? "calc(140px + env(safe-area-inset-bottom, 0px))"
-            : "calc(80px + env(safe-area-inset-bottom, 0px))",
+          paddingBottom: "calc(80px + env(safe-area-inset-bottom, 0px))",
           overscrollBehavior: "none",
         }}
       >
@@ -100,19 +74,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </main>
 
       <BottomNav />
-
-      {/* Botão instalar PWA — centralizado acima da BottomNav, sem banner */}
-      {canInstall && !dismissedInstall && (
-        <div className="fixed bottom-[72px] left-1/2 -translate-x-1/2 z-50">
-          <button
-            onClick={install}
-            className="flex items-center gap-2 bg-primary text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg active:opacity-70"
-          >
-            <Download size={14} />
-            Instalar app
-          </button>
-        </div>
-      )}
     </div>
   );
 }
