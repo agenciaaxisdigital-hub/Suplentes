@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, ArrowLeft, Trash2, FileDown, Loader2, MapPin } from "lucide-react";
+import { Search, ChevronRight, ArrowLeft, Trash2, FileDown, Loader2, MapPin, UserPlus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Cadastro from "./Cadastro";
 import { exportFichasLotePDF, exportSuplentePDF } from "@/lib/exports";
@@ -16,6 +16,7 @@ import { CardSkeletonList } from "@/components/CardSkeleton";
 
 export default function Cadastros() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>((location.state as any)?.editId ?? null);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -128,6 +129,14 @@ export default function Cadastros() {
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-xl font-bold text-foreground">Fichas Cadastradas</h1>
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => navigate("/")}
+              className="text-xs gap-1.5 active:scale-95 transition-transform bg-gradient-to-r from-pink-500 to-rose-400 text-white"
+            >
+              <UserPlus size={14} />
+              Novo
+            </Button>
             <Button
               variant="outline"
               size="sm"
