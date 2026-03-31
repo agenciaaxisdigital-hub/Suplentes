@@ -115,7 +115,7 @@ const App = () => {
     >
       <TooltipProvider>
         <GlobalOfflineSync />
-        <InstallPWA />
+        {/* <InstallPWA /> */}
       <VersionMonitor />
         <Toaster />
         <Sonner />

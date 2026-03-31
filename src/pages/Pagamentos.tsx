@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import {
   ChevronDown, ChevronUp, Trash2, X, Loader2, Wallet,
   ChevronLeft, ChevronRight, Save, Search,
   CheckCircle2, AlertCircle, Users, Briefcase, List, Pencil,
-  Receipt,
+  Receipt, ExternalLink,
 } from "lucide-react";
 
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
@@ -148,6 +149,7 @@ function SuplenteCard({ suplente, pagamentosMes, todosPagamentos, mes, ano }: {
   todosPagamentos: Pagamento[]; mes: number; ano: number;
 }) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [payingCat, setPayingCat] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [showHistCat, setShowHistCat] = useState<Record<string, boolean>>({});
@@ -162,24 +164,28 @@ function SuplenteCard({ suplente, pagamentosMes, todosPagamentos, mes, ano }: {
       planejado: suplente.retirada_mensal_valor || 0,
       pago: pagsSupMes.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0),
       badge: "mês",
+      detalhe: suplente.retirada_mensal_meses ? `${suplente.retirada_mensal_meses}m × ${fmt(suplente.retirada_mensal_valor || 0)}` : null,
     },
     {
       key: "plotagem", label: "Plotagem",
       planejado: (suplente.plotagem_qtd || 0) * (suplente.plotagem_valor_unit || 0),
       pago: pagsSupAll.filter(p => p.categoria === "plotagem").reduce((a, p) => a + p.valor, 0),
       badge: "campanha",
+      detalhe: suplente.plotagem_qtd ? `${suplente.plotagem_qtd} × ${fmt(suplente.plotagem_valor_unit || 0)}` : null,
     },
     {
       key: "liderancas", label: "Lideranças",
       planejado: (suplente.liderancas_qtd || 0) * (suplente.liderancas_valor_unit || 0),
       pago: pagsSupAll.filter(p => p.categoria === "liderancas").reduce((a, p) => a + p.valor, 0),
       badge: "campanha",
+      detalhe: suplente.liderancas_qtd ? `${suplente.liderancas_qtd} × ${fmt(suplente.liderancas_valor_unit || 0)}` : null,
     },
     {
       key: "fiscais", label: "Fiscais",
       planejado: (suplente.fiscais_qtd || 0) * (suplente.fiscais_valor_unit || 0),
       pago: pagsSupAll.filter(p => p.categoria === "fiscais").reduce((a, p) => a + p.valor, 0),
       badge: "campanha",
+      detalhe: suplente.fiscais_qtd ? `${suplente.fiscais_qtd} × ${fmt(suplente.fiscais_valor_unit || 0)}` : null,
     },
   ].filter(c => c.planejado > 0);
 
@@ -225,6 +231,13 @@ function SuplenteCard({ suplente, pagamentosMes, todosPagamentos, mes, ano }: {
               </p>
             )}
           </div>
+          <button
+            onClick={() => navigate("/cadastros", { state: { editId: suplente.id } })}
+            className="shrink-0 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary px-1.5 py-1 rounded-lg hover:bg-primary/5"
+            title="Editar cadastro"
+          >
+            <ExternalLink size={11} /> Editar
+          </button>
           <div className="text-right shrink-0">
             <p className="text-xs font-bold text-foreground">{pctCampanha.toFixed(0)}%</p>
             <p className="text-[9px] text-muted-foreground">de {fmt(totalCampanha)}</p>
@@ -261,6 +274,9 @@ function SuplenteCard({ suplente, pagamentosMes, todosPagamentos, mes, ano }: {
                       </span>
                       {quitado && <CheckCircle2 size={11} className="text-green-500" />}
                     </div>
+                    {cat.detalhe && (
+                      <p className="text-[10px] text-muted-foreground leading-tight">{cat.detalhe}</p>
+                    )}
                   </div>
                   <div className="text-right shrink-0">
                     <span className="text-xs font-bold text-foreground">{fmt(cat.pago)}</span>

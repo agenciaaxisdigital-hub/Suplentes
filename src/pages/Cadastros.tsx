@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
@@ -14,8 +15,9 @@ import { PageTransition } from "@/components/PageTransition";
 import { CardSkeletonList } from "@/components/CardSkeleton";
 
 export default function Cadastros() {
+  const location = useLocation();
   const [search, setSearch] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>((location.state as any)?.editId ?? null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const { data: suplentes, refetch, isLoading } = useQuery({
