@@ -126,11 +126,11 @@ WHERE LOWER(TRIM(l.nome)) = 'wesley'
     SELECT 1 FROM public.pagamentos p WHERE p.lideranca_id = l.id AND p.mes = v.mes AND p.ano = 2026
   );
 
--- Bebezão: Fev + Mar + Abr
+-- Bebezão: Fev + Mar (Abr ainda não pago)
 INSERT INTO public.pagamentos (tipo_pessoa, lideranca_id, mes, ano, categoria, valor, observacao)
 SELECT 'lideranca', l.id, v.mes, 2026, 'retirada', l.retirada_mensal_valor, 'Pagamento em lote'
 FROM public.liderancas l
-CROSS JOIN (VALUES (2),(3),(4)) AS v(mes)
+CROSS JOIN (VALUES (2),(3)) AS v(mes)
 WHERE LOWER(TRIM(l.nome)) = 'bebezão'
   AND NOT EXISTS (
     SELECT 1 FROM public.pagamentos p WHERE p.lideranca_id = l.id AND p.mes = v.mes AND p.ano = 2026
@@ -163,14 +163,13 @@ WHERE LOWER(TRIM(l.nome)) = 'vitor'
     SELECT 1 FROM public.pagamentos p WHERE p.lideranca_id = l.id AND p.mes = 3 AND p.ano = 2026
   );
 
--- Edenilson Gaspar Neguinho: Mar + Abr
+-- Edenilson Gaspar Neguinho: Mar (Abr ainda não pago)
 INSERT INTO public.pagamentos (tipo_pessoa, lideranca_id, mes, ano, categoria, valor, observacao)
-SELECT 'lideranca', l.id, v.mes, 2026, 'retirada', l.retirada_mensal_valor, 'Pagamento em lote'
+SELECT 'lideranca', l.id, 3, 2026, 'retirada', l.retirada_mensal_valor, 'Pagamento em lote'
 FROM public.liderancas l
-CROSS JOIN (VALUES (3),(4)) AS v(mes)
 WHERE LOWER(TRIM(l.nome)) = 'edenilson gaspar neguinho'
   AND NOT EXISTS (
-    SELECT 1 FROM public.pagamentos p WHERE p.lideranca_id = l.id AND p.mes = v.mes AND p.ano = 2026
+    SELECT 1 FROM public.pagamentos p WHERE p.lideranca_id = l.id AND p.mes = 3 AND p.ano = 2026
   );
 
 -- Arlindo: Mar
@@ -265,14 +264,13 @@ WHERE LOWER(TRIM(s.nome)) = 'clevis'
     SELECT 1 FROM public.pagamentos p WHERE p.suplente_id = s.id AND p.mes = 3 AND p.ano = 2026 AND p.categoria = 'retirada'
   );
 
--- Pr. Wendel: Mar + Abr
+-- Pr. Wendel: Mar (Abr ainda não pago)
 INSERT INTO public.pagamentos (tipo_pessoa, suplente_id, mes, ano, categoria, valor, observacao)
-SELECT 'suplente', s.id, v.mes, 2026, 'retirada', s.retirada_mensal_valor, 'Pagamento em lote'
+SELECT 'suplente', s.id, 3, 2026, 'retirada', s.retirada_mensal_valor, 'Pagamento em lote'
 FROM public.suplentes s
-CROSS JOIN (VALUES (3),(4)) AS v(mes)
 WHERE LOWER(TRIM(s.nome)) = 'pr. wendel'
   AND NOT EXISTS (
-    SELECT 1 FROM public.pagamentos p WHERE p.suplente_id = s.id AND p.mes = v.mes AND p.ano = 2026 AND p.categoria = 'retirada'
+    SELECT 1 FROM public.pagamentos p WHERE p.suplente_id = s.id AND p.mes = 3 AND p.ano = 2026 AND p.categoria = 'retirada'
   );
 
 -- Júnior Buiu: Mar
@@ -320,14 +318,7 @@ WHERE LOWER(TRIM(s.nome)) = 'rogério trator'
     SELECT 1 FROM public.pagamentos p WHERE p.suplente_id = s.id AND p.mes = 3 AND p.ano = 2026 AND p.categoria = 'retirada'
   );
 
--- Valdeson Pantera: Abr
-INSERT INTO public.pagamentos (tipo_pessoa, suplente_id, mes, ano, categoria, valor, observacao)
-SELECT 'suplente', s.id, 4, 2026, 'retirada', s.retirada_mensal_valor, 'Pagamento em lote'
-FROM public.suplentes s
-WHERE LOWER(TRIM(s.nome)) = 'valdeson pantera'
-  AND NOT EXISTS (
-    SELECT 1 FROM public.pagamentos p WHERE p.suplente_id = s.id AND p.mes = 4 AND p.ano = 2026 AND p.categoria = 'retirada'
-  );
+-- Valdeson Pantera: sem pagamentos registrados (Abr ainda não pago)
 
 -- ── 5. VERIFICAÇÃO FINAL ──────────────────────────────────────────────────────
 SELECT 'LIDERANCAS' AS tabela, COUNT(*) AS total FROM public.liderancas
