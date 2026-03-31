@@ -358,62 +358,84 @@ export function exportAllPDF(list: any[]) {
 }
 
 export function exportExcel(list: any[]) {
-  const data = list.map((s, i) => ({
-    "#": i + 1,
-    "Nome": s.nome,
-    "Região": s.regiao_atuacao || "",
-    "Telefone": s.telefone || "",
-    "Cargo": s.cargo_disputado || "",
-    "Partido": s.partido || "",
-    "Situação": s.situacao || "",
-    "Votos Eleição Passada": s.total_votos || 0,
-    "Expectativa Votos": s.expectativa_votos || 0,
-    "Retirada Mensal (R$)": s.retirada_mensal_valor || 0,
-    "Meses": s.retirada_mensal_meses || 0,
-    "Plotagem Qtd": s.plotagem_qtd || 0,
-    "Plotagem Unit. (R$)": s.plotagem_valor_unit || 0,
-    "Lideranças Qtd": s.liderancas_qtd || 0,
-    "Lideranças Unit. (R$)": s.liderancas_valor_unit || 0,
-    "Fiscais Qtd": s.fiscais_qtd || 0,
-    "Fiscais Unit. (R$)": s.fiscais_valor_unit || 0,
-    "Total Pessoas": (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0),
-    "Total Campanha (R$)": calcTotaisFinanceiros(s).totalFinal,
-  }));
-
-  // Add TOTAL row
-  data.push({
-    "#": "",
-    "Nome": "TOTAL",
-    "Região": "",
-    "Telefone": "",
-    "Cargo": "",
-    "Partido": "",
-    "Situação": "",
-    "Votos Eleição Passada": list.reduce((a, s) => a + (s.total_votos || 0), 0),
-    "Expectativa Votos": list.reduce((a, s) => a + (s.expectativa_votos || 0), 0),
-    "Retirada Mensal (R$)": "",
-    "Meses": "",
-    "Plotagem Qtd": list.reduce((a, s) => a + (s.plotagem_qtd || 0), 0),
-    "Plotagem Unit. (R$)": "",
-    "Lideranças Qtd": list.reduce((a, s) => a + (s.liderancas_qtd || 0), 0),
-    "Lideranças Unit. (R$)": "",
-    "Fiscais Qtd": list.reduce((a, s) => a + (s.fiscais_qtd || 0), 0),
-    "Fiscais Unit. (R$)": "",
-    "Total Pessoas": list.reduce((a, s) => a + (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0), 0),
-    "Total Campanha (R$)": list.reduce((a, s) => a + calcTotaisFinanceiros(s).totalFinal, 0),
-  } as any);
-
-  const ws = XLSX.utils.json_to_sheet(data);
-
-  // Column widths
-  ws["!cols"] = [
-    { wch: 4 }, { wch: 28 }, { wch: 22 }, { wch: 16 }, { wch: 12 },
-    { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 14 },
-    { wch: 6 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 14 },
-    { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 16 },
-  ];
-
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Suplentes");
-  XLSX.writeFile(wb, "Planilha_Suplentes.xlsx");
+
+  // ── Aba 1: DADOS CADASTRAIS ──────────────────────────────────────────────────
+  const cadastrais = list.map((s, i) => ({
+    "#": i + 1,
+    "Nome": s.nome || "",
+    "Nº Urna": s.numero_urna || "",
+    "Região de Atuação": s.regiao_atuacao || "",
+    "Bairro": s.bairro || "",
+    "Partido": s.partido || "",
+    "Telefone": s.telefone || "",
+    "Cargo Disputado": s.cargo_disputado || "",
+    "Ano Eleição": s.ano_eleicao || "",
+    "Situação": s.situacao || "",
+    "Base Política": s.base_politica || "",
+  }));
+  const wsCad = XLSX.utils.json_to_sheet(cadastrais);
+  wsCad["!cols"] = [
+    { wch: 4 }, { wch: 30 }, { wch: 10 }, { wch: 26 }, { wch: 20 },
+    { wch: 14 }, { wch: 16 }, { wch: 18 }, { wch: 10 }, { wch: 14 }, { wch: 40 },
+  ];
+  XLSX.utils.book_append_sheet(wb, wsCad, "Cadastro");
+
+  // ── Aba 2: FINANCEIRO DA CAMPANHA ────────────────────────────────────────────
+  const financeiro = list.map((s, i) => {
+    const { retirada, plotagem, liderancas, fiscais, totalFinal } = calcTotaisFinanceiros(s);
+    return {
+      "#": i + 1,
+      "Nome": s.nome || "",
+      "Região": s.regiao_atuacao || "",
+      "Retirada Mensal (R$)": s.retirada_mensal_valor || 0,
+      "Meses Retirada": s.retirada_mensal_meses || 0,
+      "Total Retirada (R$)": retirada,
+      "Plotagem Qtd": s.plotagem_qtd || 0,
+      "Plotagem Unit. (R$)": s.plotagem_valor_unit || 0,
+      "Total Plotagem (R$)": plotagem,
+      "Lideranças Qtd": s.liderancas_qtd || 0,
+      "Lideranças Unit. (R$)": s.liderancas_valor_unit || 0,
+      "Total Lideranças (R$)": liderancas,
+      "Fiscais Qtd": s.fiscais_qtd || 0,
+      "Fiscais Unit. (R$)": s.fiscais_valor_unit || 0,
+      "Total Fiscais (R$)": fiscais,
+      "Total Pessoas Campo": (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0),
+      "TOTAL CAMPANHA (R$)": totalFinal,
+    };
+  });
+
+  // Linha de totais
+  financeiro.push({
+    "#": "" as any,
+    "Nome": "▶ TOTAL GERAL",
+    "Região": "",
+    "Retirada Mensal (R$)": "" as any,
+    "Meses Retirada": "" as any,
+    "Total Retirada (R$)": list.reduce((a, s) => a + calcTotaisFinanceiros(s).retirada, 0),
+    "Plotagem Qtd": list.reduce((a, s) => a + (s.plotagem_qtd || 0), 0),
+    "Plotagem Unit. (R$)": "" as any,
+    "Total Plotagem (R$)": list.reduce((a, s) => a + calcTotaisFinanceiros(s).plotagem, 0),
+    "Lideranças Qtd": list.reduce((a, s) => a + (s.liderancas_qtd || 0), 0),
+    "Lideranças Unit. (R$)": "" as any,
+    "Total Lideranças (R$)": list.reduce((a, s) => a + calcTotaisFinanceiros(s).liderancas, 0),
+    "Fiscais Qtd": list.reduce((a, s) => a + (s.fiscais_qtd || 0), 0),
+    "Fiscais Unit. (R$)": "" as any,
+    "Total Fiscais (R$)": list.reduce((a, s) => a + calcTotaisFinanceiros(s).fiscais, 0),
+    "Total Pessoas Campo": list.reduce((a, s) => a + (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0), 0),
+    "TOTAL CAMPANHA (R$)": list.reduce((a, s) => a + calcTotaisFinanceiros(s).totalFinal, 0),
+  });
+
+  const wsFin = XLSX.utils.json_to_sheet(financeiro);
+  wsFin["!cols"] = [
+    { wch: 4 }, { wch: 30 }, { wch: 22 },
+    { wch: 16 }, { wch: 8 }, { wch: 18 },
+    { wch: 12 }, { wch: 16 }, { wch: 16 },
+    { wch: 12 }, { wch: 16 }, { wch: 18 },
+    { wch: 12 }, { wch: 14 }, { wch: 16 },
+    { wch: 16 }, { wch: 18 },
+  ];
+  XLSX.utils.book_append_sheet(wb, wsFin, "Financeiro");
+
+  XLSX.writeFile(wb, `Planilha_Suplentes_${new Date().toLocaleDateString("pt-BR").replace(/\//g, "-")}.xlsx`);
 }
