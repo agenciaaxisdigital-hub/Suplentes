@@ -89,8 +89,8 @@ export function exportSuplentePDF(s: any) {
     ["Ano Eleição", String(s.ano_eleicao || "—")],
     ["Partido", s.partido || "—"],
     ["Situação", s.situacao || "—"],
-    ["Total de Votos", fmtN(s.total_votos || 0)],
-    ["Expectativa de Votos", fmtN(s.expectativa_votos || 0)],
+    ["Região de Atuação", s.regiao_atuacao || "—"],
+    ["Número de Urna", s.numero_urna || "—"],
   ];
 
   doc.setFontSize(9);
@@ -218,8 +218,8 @@ export function exportFichasLotePDF(list: any[]) {
       ["Ano Eleicao", String(s.ano_eleicao || "-")],
       ["Partido", s.partido || "-"],
       ["Situacao", s.situacao || "-"],
-      ["Total de Votos", fmtN(s.total_votos || 0)],
-      ["Expectativa de Votos", fmtN(s.expectativa_votos || 0)],
+      ["Regiao de Atuacao", s.regiao_atuacao || "-"],
+      ["Numero de Urna", s.numero_urna || "-"],
     ];
 
     doc.setFontSize(9);
@@ -285,26 +285,20 @@ export function exportAllPDF(list: any[]) {
 
   addHeader(doc, "RELATÓRIO GERAL");
 
-  const totalVotos = list.reduce((a, s) => a + (s.total_votos || 0), 0);
-  const totalExpect = list.reduce((a, s) => a + (s.expectativa_votos || 0), 0);
   const totalPessoas = list.reduce((a, s) => a + (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0), 0);
   const totalCampanha = list.reduce((a, s) => a + calcTotaisFinanceiros(s).totalFinal, 0);
+  const totalRetirada = list.reduce((a, s) => a + (s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0), 0);
 
   // Summary cards
   let y = 38;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...DARK);
-
   const cards = [
-    [`${list.length}`, "Candidatos"],
-    [fmtN(totalVotos), "Votos"],
-    [fmtN(totalExpect), "Expectativa"],
+    [`${list.length}`, "Suplentes"],
     [fmtN(totalPessoas), "Pessoas de Campo"],
-    [fmt(totalCampanha), "Total Campanhas"],
+    [fmt(totalRetirada), "Total Retiradas"],
+    [fmt(totalCampanha), "Total Campanha"],
   ];
 
-  const cardW = (w - 28 - 4 * 4) / 5;
+  const cardW = (w - 28 - 3 * 4) / 4;
   cards.forEach(([val, label], i) => {
     const x = 14 + i * (cardW + 4);
     doc.setFillColor(252, 231, 243);
@@ -324,20 +318,23 @@ export function exportAllPDF(list: any[]) {
   // Table
   autoTable(doc, {
     startY: y,
-    head: [["#", "Nome", "Região", "Partido", "Votos", "Expect.", "Lideranças", "Fiscais", "Pessoas", "Total (R$)"]],
-    body: list.map((s, i) => [
-      String(i + 1),
-      s.nome || "",
-      s.regiao_atuacao || "",
-      s.partido || "",
-      fmtN(s.total_votos || 0),
-      fmtN(s.expectativa_votos || 0),
-      fmtN(s.liderancas_qtd || 0),
-      fmtN(s.fiscais_qtd || 0),
-      fmtN((s.liderancas_qtd || 0) + (s.fiscais_qtd || 0)),
-      fmt(calcTotaisFinanceiros(s).totalFinal),
-    ]),
-    foot: [["", "TOTAL", "", "", fmtN(totalVotos), fmtN(totalExpect), "", "", fmtN(totalPessoas), fmt(totalCampanha)]],
+    head: [["#", "Nome", "Região", "Partido", "Nº Urna", "Lideranças", "Fiscais", "Pessoas", "Retirada/Mês", "Total (R$)"]],
+    body: list.map((s, i) => {
+      const tot = calcTotaisFinanceiros(s);
+      return [
+        String(i + 1),
+        s.nome || "",
+        s.regiao_atuacao || "",
+        s.partido || "",
+        s.numero_urna || "—",
+        fmtN(s.liderancas_qtd || 0),
+        fmtN(s.fiscais_qtd || 0),
+        fmtN((s.liderancas_qtd || 0) + (s.fiscais_qtd || 0)),
+        fmt(s.retirada_mensal_valor || 0),
+        fmt(tot.totalFinal),
+      ];
+    }),
+    foot: [["", "TOTAL", "", "", "", "", "", fmtN(totalPessoas), "", fmt(totalCampanha)]],
     margin: { left: 14, right: 14 },
     headStyles: { fillColor: [...PINK], textColor: [...WHITE], fontStyle: "bold", fontSize: 7, halign: "center" },
     bodyStyles: { fontSize: 7, textColor: [...DARK] },
@@ -345,8 +342,7 @@ export function exportAllPDF(list: any[]) {
     alternateRowStyles: { fillColor: [250, 250, 250] },
     columnStyles: {
       0: { halign: "center", cellWidth: 8 },
-      1: { cellWidth: 40 },
-      4: { halign: "right" },
+      1: { cellWidth: 38 },
       5: { halign: "right" },
       6: { halign: "right" },
       7: { halign: "right" },

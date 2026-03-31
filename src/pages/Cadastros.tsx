@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, ArrowLeft, Trash2, FileDown, Loader2, MapPin } from "lucide-react";
+import { Search, ChevronRight, ArrowLeft, Trash2, FileDown, Loader2, MapPin, Wallet, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Cadastro from "./Cadastro";
 import { exportFichasLotePDF, exportSuplentePDF } from "@/lib/exports";
@@ -46,6 +46,10 @@ export default function Cadastros() {
 
 
   const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const fmtN = (v: number) => (v || 0).toLocaleString("pt-BR");
+
+  const totalCampanha = (suplentes || []).reduce((a: number, s: any) => a + calcTotaisFinanceiros(s).totalFinal, 0);
+  const totalPessoas = (suplentes || []).reduce((a: number, s: any) => a + (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0), 0);
 
   const editing = editingId ? suplentes?.find((s: any) => s.id === editingId) : null;
 
@@ -141,6 +145,26 @@ export default function Cadastros() {
         </div>
 
 
+        {/* Painel financeiro da campanha */}
+        {!isLoading && (suplentes || []).length > 0 && (
+          <div className="bg-gradient-to-r from-pink-500 to-rose-400 rounded-2xl p-3 shadow-sm">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Wallet size={13} className="text-white/80" />
+              <p className="text-white/80 text-xs font-medium">Resumo da Campanha — {(suplentes || []).length} suplentes</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-white/15 rounded-xl p-2 text-center">
+                <p className="text-white/70 text-[9px] uppercase tracking-wider">Total Campanha</p>
+                <p className="text-white font-bold text-base leading-tight">{fmt(totalCampanha)}</p>
+              </div>
+              <div className="bg-white/15 rounded-xl p-2 text-center">
+                <p className="text-white/70 text-[9px] uppercase tracking-wider flex items-center justify-center gap-1"><Users size={9} /> Pessoas de Campo</p>
+                <p className="text-white font-bold text-base leading-tight">{fmtN(totalPessoas)}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="relative">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -197,19 +221,19 @@ export default function Cadastros() {
                       </div>
                     </button>
 
-                    {/* Row 1: Votos / Expectativa / Pessoas */}
+                    {/* Row 1: Partido / Pessoas / Total Campanha */}
                     <div className="grid grid-cols-3 border-t border-border divide-x divide-border bg-muted/40">
                       <div className="py-2 px-1 text-center">
-                        <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Votos</p>
-                        <p className="text-sm font-bold text-foreground">{fmtN(s.total_votos)}</p>
-                      </div>
-                      <div className="py-2 px-1 text-center">
-                        <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Expect.</p>
-                        <p className="text-sm font-bold text-foreground">{fmtN(s.expectativa_votos)}</p>
+                        <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Partido</p>
+                        <p className="text-xs font-bold text-foreground truncate px-1">{s.partido || "—"}</p>
                       </div>
                       <div className="py-2 px-1 text-center">
                         <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Pessoas</p>
                         <p className="text-sm font-bold text-foreground">{fmtN(pessoas)}</p>
+                      </div>
+                      <div className="py-2 px-1 text-center">
+                        <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Campanha</p>
+                        <p className="text-xs font-bold text-primary">{fmt(calcTotaisFinanceiros(s).totalFinal)}</p>
                       </div>
                     </div>
 
