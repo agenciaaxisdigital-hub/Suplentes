@@ -15,15 +15,21 @@ export default function SignaturePad({ open, onClose, onSave, initial }: Props) 
   const [drawing, setDrawing] = useState(false);
   const [hasContent, setHasContent] = useState(false);
 
-  // Lock scroll when open + scroll para o topo para garantir visibilidade no PWA
+  // Lock scroll + dismiss keyboard when open
   useEffect(() => {
     if (open) {
+      // Blur any focused input to dismiss keyboard BEFORE the modal renders
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
       document.body.style.overflow = "hidden";
-      // Rola todos os containers para o topo antes de exibir o modal
-      // Necessário em PWA/iOS onde position:fixed pode ter comportamento inesperado
-      window.scrollTo({ top: 0, behavior: "instant" });
-      const mainEl = document.querySelector("main");
-      if (mainEl) mainEl.scrollTop = 0;
+      // Wait for keyboard to fully dismiss before scrolling (PWA/iOS)
+      const t = setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: "instant" });
+        const mainEl = document.querySelector("main");
+        if (mainEl) mainEl.scrollTop = 0;
+      }, 100);
+      return () => clearTimeout(t);
     } else {
       document.body.style.overflow = "";
     }

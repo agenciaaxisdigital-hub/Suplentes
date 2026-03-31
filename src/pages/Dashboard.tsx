@@ -3,14 +3,17 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Users, Vote, TrendingUp, MapPin, ChevronDown, ChevronUp,
   FileDown, FileSpreadsheet, Wallet, CheckCircle2, AlertCircle, Briefcase,
-  UserCog, BarChart2, List, Clock,
+  UserCog, BarChart2, List, Clock, Search, X,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { exportAllPDF, exportExcel } from "@/lib/exports";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 import { PageTransition } from "@/components/PageTransition";
 import { CardSkeletonList } from "@/components/CardSkeleton";
+
+const norm = (s: string) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -54,6 +57,7 @@ export default function Dashboard() {
   const [showAllSuplentes, setShowAllSuplentes] = useState(false);
   const [showAllLids, setShowAllLids] = useState(false);
   const [showAllAdms, setShowAllAdms] = useState(false);
+  const [search, setSearch] = useState("");
 
   const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes"],
@@ -228,6 +232,14 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Busca */}
+        <div className="relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Filtrar por nome..." className="pl-9 h-10 bg-card border-border rounded-xl text-sm" />
+          {search && <button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setSearch("")}><X size={14} /></button>}
+        </div>
+
         {isLoading ? <CardSkeletonList count={6} /> : (
           <>
             {/* ── Painel do mês ──────────────────────────────────────────────── */}
@@ -330,18 +342,25 @@ export default function Dashboard() {
                   </p>
                 </div>
               )}
-              {(showAllSuplentes ? supData : supData.slice(0, 5)).filter((s: any) => s.planejadoMes > 0).map((s: any) => (
-                <PersonRow key={s.id} nome={s.nome}
-                  subtitulo={[s.regiao_atuacao, s.partido].filter(Boolean).join(" · ")}
-                  planejadoMes={s.planejadoMes} pagoMes={s.pagoMes} pago={s.pago}
-                  totalCamp={s.totalCamp} pagoAll={s.pagoAll} />
-              ))}
-              {supData.filter((s: any) => s.planejadoMes > 0).length > 5 && (
-                <button onClick={() => setShowAllSuplentes(!showAllSuplentes)}
-                  className="w-full py-2 text-xs text-primary font-medium flex items-center justify-center gap-1">
-                  {showAllSuplentes ? <><ChevronUp size={13} /> Mostrar menos</> : <><ChevronDown size={13} /> Ver todos ({supData.filter((s: any) => s.planejadoMes > 0).length})</>}
-                </button>
-              )}
+              {(() => {
+                const filtered = supData.filter((s: any) => s.planejadoMes > 0 && (!search.trim() || norm(s.nome).includes(norm(search)) || norm(s.regiao_atuacao || "").includes(norm(search))));
+                const visible = showAllSuplentes || search.trim() ? filtered : filtered.slice(0, 5);
+                return (<>
+                  {visible.map((s: any) => (
+                    <PersonRow key={s.id} nome={s.nome}
+                      subtitulo={[s.regiao_atuacao, s.partido].filter(Boolean).join(" · ")}
+                      planejadoMes={s.planejadoMes} pagoMes={s.pagoMes} pago={s.pago}
+                      totalCamp={s.totalCamp} pagoAll={s.pagoAll} />
+                  ))}
+                  {!search.trim() && filtered.length > 5 && (
+                    <button onClick={() => setShowAllSuplentes(!showAllSuplentes)}
+                      className="w-full py-2 text-xs text-primary font-medium flex items-center justify-center gap-1">
+                      {showAllSuplentes ? <><ChevronUp size={13} /> Mostrar menos</> : <><ChevronDown size={13} /> Ver todos ({filtered.length})</>}
+                    </button>
+                  )}
+                  {search.trim() && filtered.length === 0 && <p className="px-4 py-3 text-sm text-muted-foreground">Nenhum resultado.</p>}
+                </>);
+              })()}
             </Section>
 
             {/* ── Lideranças ───────────────────────────────────────────────── */}
@@ -358,17 +377,24 @@ export default function Dashboard() {
                   </p>
                 </div>
               )}
-              {(showAllLids ? lidData : lidData.slice(0, 5)).filter((l: any) => l.planejadoMes > 0).map((l: any) => (
-                <PersonRow key={l.id} nome={l.nome} subtitulo={l.regiao || undefined}
-                  planejadoMes={l.planejadoMes} pagoMes={l.pagoMes} pago={l.pago}
-                  totalCamp={l.totalCamp} pagoAll={l.pagoAll} />
-              ))}
-              {lidData.filter((l: any) => l.planejadoMes > 0).length > 5 && (
-                <button onClick={() => setShowAllLids(!showAllLids)}
-                  className="w-full py-2 text-xs text-primary font-medium flex items-center justify-center gap-1">
-                  {showAllLids ? <><ChevronUp size={13} /> Mostrar menos</> : <><ChevronDown size={13} /> Ver todos ({lidData.filter((l: any) => l.planejadoMes > 0).length})</>}
-                </button>
-              )}
+              {(() => {
+                const filtered = lidData.filter((l: any) => l.planejadoMes > 0 && (!search.trim() || norm(l.nome).includes(norm(search)) || norm(l.regiao || "").includes(norm(search))));
+                const visible = showAllLids || search.trim() ? filtered : filtered.slice(0, 5);
+                return (<>
+                  {visible.map((l: any) => (
+                    <PersonRow key={l.id} nome={l.nome} subtitulo={l.regiao || undefined}
+                      planejadoMes={l.planejadoMes} pagoMes={l.pagoMes} pago={l.pago}
+                      totalCamp={l.totalCamp} pagoAll={l.pagoAll} />
+                  ))}
+                  {!search.trim() && filtered.length > 5 && (
+                    <button onClick={() => setShowAllLids(!showAllLids)}
+                      className="w-full py-2 text-xs text-primary font-medium flex items-center justify-center gap-1">
+                      {showAllLids ? <><ChevronUp size={13} /> Mostrar menos</> : <><ChevronDown size={13} /> Ver todos ({filtered.length})</>}
+                    </button>
+                  )}
+                  {search.trim() && filtered.length === 0 && <p className="px-4 py-3 text-sm text-muted-foreground">Nenhum resultado.</p>}
+                </>);
+              })()}
             </Section>
 
             {/* ── Administrativo ───────────────────────────────────────────── */}
@@ -385,12 +411,19 @@ export default function Dashboard() {
                   </p>
                 </div>
               )}
-              {(showAllAdms ? admData : admData.slice(0, 5)).filter((d: any) => d.planejadoMes > 0).map((d: any) => (
-                <PersonRow key={d.id} nome={d.nome} subtitulo={d.whatsapp || undefined}
-                  planejadoMes={d.planejadoMes} pagoMes={d.pagoMes} pago={d.pago}
-                  totalCamp={d.totalCamp} pagoAll={d.pagoAll} />
-              ))}
-              {admData.filter((d: any) => d.planejadoMes > 0).length > 5 && (
+              {(() => {
+                const filtered = admData.filter((d: any) => d.planejadoMes > 0 && (!search.trim() || norm(d.nome).includes(norm(search))));
+                const visible = showAllAdms || search.trim() ? filtered : filtered.slice(0, 5);
+                return (<>
+                  {visible.map((d: any) => (
+                    <PersonRow key={d.id} nome={d.nome} subtitulo={d.whatsapp || undefined}
+                      planejadoMes={d.planejadoMes} pagoMes={d.pagoMes} pago={d.pago}
+                      totalCamp={d.totalCamp} pagoAll={d.pagoAll} />
+                  ))}
+                  {search.trim() && filtered.length === 0 && <p className="px-4 py-3 text-sm text-muted-foreground">Nenhum resultado.</p>}
+                </>);
+              })()}
+              {!search.trim() && admData.filter((d: any) => d.planejadoMes > 0).length > 5 && (
                 <button onClick={() => setShowAllAdms(!showAllAdms)}
                   className="w-full py-2 text-xs text-primary font-medium flex items-center justify-center gap-1">
                   {showAllAdms ? <><ChevronUp size={13} /> Mostrar menos</> : <><ChevronDown size={13} /> Ver todos ({admData.filter((d: any) => d.planejadoMes > 0).length})</>}

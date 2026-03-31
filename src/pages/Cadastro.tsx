@@ -297,7 +297,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
               <img src={form.assinatura} alt="Assinatura" className="w-full h-24 object-contain" />
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowSignature(true)}>
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => { (document.activeElement as HTMLElement)?.blur(); setShowSignature(true); }}>
                 <PenLine size={14} /> Refazer
               </Button>
               <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => set("assinatura", "")}>
@@ -306,7 +306,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
             </div>
           </div>
         ) : (
-          <Button variant="outline" className="w-full h-20 border-dashed border-2 text-muted-foreground" onClick={() => setShowSignature(true)}>
+          <Button variant="outline" className="w-full h-20 border-dashed border-2 text-muted-foreground" onClick={() => { (document.activeElement as HTMLElement)?.blur(); setShowSignature(true); }}>
             <PenLine size={20} className="mr-2" />
             Toque para assinar
           </Button>
