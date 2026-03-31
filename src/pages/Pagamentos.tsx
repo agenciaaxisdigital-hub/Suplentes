@@ -313,13 +313,14 @@ function SuplenteCard({ suplente, pagamentosMes, todosPagamentos, mes, ano }: {
                       {quitado && <CheckCircle2 size={11} className="text-green-500" />}
                     </div>
                     {cat.detalhe && editingCat !== cat.key && (
-                      <div className="flex items-center gap-1">
-                        <p className="text-[10px] text-muted-foreground leading-tight">{cat.detalhe}</p>
-                        {cat.editavel && (
-                          <button onClick={() => { setEditingCat(cat.key); setEditQtd(String(cat.qtd || 0)); setEditVal(String(cat.valUnit || 0)); }}
-                            className="text-muted-foreground hover:text-primary"><Pencil size={10} /></button>
-                        )}
-                      </div>
+                      cat.editavel
+                        ? <button
+                            onClick={() => { setEditingCat(cat.key); setEditQtd(String(cat.qtd || 0)); setEditVal(String(cat.valUnit || 0)); }}
+                            className="flex items-center gap-1 text-[10px] text-primary/70 underline underline-offset-2 leading-tight active:opacity-60"
+                          >
+                            <Pencil size={9} />{cat.detalhe}
+                          </button>
+                        : <p className="text-[10px] text-muted-foreground leading-tight">{cat.detalhe}</p>
                     )}
                   </div>
                   <div className="text-right shrink-0">
